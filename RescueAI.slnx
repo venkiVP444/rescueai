@@ -4,8 +4,12 @@
     <Project Path="src/Rescue.Application/Rescue.Application.csproj" />
     <Project Path="src/Rescue.Domain/Rescue.Domain.csproj" />
     <Project Path="src/Rescue.Infrastructure/Rescue.Infrastructure.csproj" />
+    <Project Path="src/Rescue.Sdk/Rescue.Sdk.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Rescue.Tests/Rescue.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/RescueSampleApp/RescueSampleApp.csproj" />
   </Folder>
 </Solution>

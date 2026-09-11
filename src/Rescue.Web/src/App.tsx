@@ -7,6 +7,7 @@ import { FixModal } from './components/FixModal';
 import { MossObservabilityView } from './components/MossObservabilityView';
 import { SystemExplorerView } from './components/SystemExplorerView';
 import { SubmissionHubView } from './components/SubmissionHubView';
+import { IntegrationsHubView } from './components/IntegrationsHubView';
 import {
   Incident,
   ServiceHealth,
@@ -17,7 +18,7 @@ import {
 import { ShieldAlert, CheckCircle, AlertTriangle, FileCode } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'dots' | 'moss' | 'explorer' | 'submission'>('dots');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'dots' | 'moss' | 'explorer' | 'submission' | 'integrations'>('dots');
   const [autonomyMode, setAutonomyMode] = useState<AutonomyMode>('Recommend');
   const [systemStatus, setSystemStatus] = useState<string>('Healthy');
   const [services, setServices] = useState<ServiceHealth[]>([]);
@@ -264,6 +265,10 @@ export const App: React.FC = () => {
 
         {activeTab === 'submission' && (
           <SubmissionHubView />
+        )}
+
+        {activeTab === 'integrations' && (
+          <IntegrationsHubView />
         )}
       </main>
 

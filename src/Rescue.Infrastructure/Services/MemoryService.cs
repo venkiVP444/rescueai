@@ -28,6 +28,8 @@ public class MemoryService : IMemoryService
             _dbContext.Database.ExecuteSqlRaw(@"
                 CREATE TABLE IF NOT EXISTS ""IncidentMemories"" (
                     ""Id"" TEXT NOT NULL CONSTRAINT ""PK_IncidentMemories"" PRIMARY KEY,
+                    ""ProjectId"" TEXT NOT NULL DEFAULT 'acme-commerce',
+                    ""Environment"" TEXT NOT NULL DEFAULT 'production',
                     ""IncidentId"" TEXT NOT NULL,
                     ""Title"" TEXT NOT NULL,
                     ""Service"" TEXT NOT NULL,
@@ -49,6 +51,7 @@ public class MemoryService : IMemoryService
                     ""EvidenceReferences"" TEXT NOT NULL,
                     ""IsBaseline"" INTEGER NOT NULL
                 );");
+
             if (!_dbContext.IncidentMemories.Any())
             {
                 SeedBaselineMemoriesInternal();
@@ -67,6 +70,7 @@ public class MemoryService : IMemoryService
             new()
             {
                 Id = "MEM-001",
+                ProjectId = "acme-commerce",
                 IncidentId = "INC-001",
                 Title = "PaymentService API Compatibility Failure",
                 Service = "PaymentService",
@@ -91,6 +95,7 @@ public class MemoryService : IMemoryService
             new()
             {
                 Id = "MEM-002",
+                ProjectId = "acme-commerce",
                 IncidentId = "INC-003",
                 Title = "Redis Pool Starvation under Peak Load",
                 Service = "PaymentService",
@@ -125,12 +130,18 @@ public class MemoryService : IMemoryService
             memory.Id = Guid.NewGuid().ToString("N");
         }
 
+        if (string.IsNullOrWhiteSpace(memory.IncidentId))
+        {
+            memory.IncidentId = $"INC-{Guid.NewGuid().ToString("N")[..8]}";
+        }
+
         var existing = await _dbContext.IncidentMemories
-            .FirstOrDefaultAsync(m => m.IncidentId == memory.IncidentId, cancellationToken);
+            .FirstOrDefaultAsync(m => m.ProjectId == memory.ProjectId && m.IncidentId == memory.IncidentId, cancellationToken);
 
         if (existing != null)
         {
             // Update existing record
+            existing.ProjectId = memory.ProjectId;
             existing.Title = memory.Title;
             existing.Symptoms = memory.Symptoms;
             existing.RootCause = memory.RootCause;
@@ -152,9 +163,16 @@ public class MemoryService : IMemoryService
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<MemoryMatchResult?> FindSimilarIncidentAsync(Incident incident, CancellationToken cancellationToken = default)
+    public async Task<MemoryMatchResult?> FindSimilarIncidentAsync(Incident incident, string? projectId = null, CancellationToken cancellationToken = default)
     {
-        var memories = await _dbContext.IncidentMemories
+        var targetProject = !string.IsNullOrWhiteSpace(projectId) ? projectId : incident.ProjectId;
+        var query = _dbContext.IncidentMemories.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(targetProject))
+        {
+            query = query.Where(m => m.ProjectId == targetProject);
+        }
+
+        var memories = await query
             .OrderByDescending(m => m.ResolvedAt)
             .ToListAsync(cancellationToken);
 
@@ -238,9 +256,15 @@ public class MemoryService : IMemoryService
         return null;
     }
 
-    public async Task<List<IncidentMemory>> GetAllMemoriesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<IncidentMemory>> GetAllMemoriesAsync(string? projectId = null, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.IncidentMemories
+        var query = _dbContext.IncidentMemories.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(projectId))
+        {
+            query = query.Where(m => m.ProjectId == projectId);
+        }
+
+        return await query
             .OrderByDescending(m => m.ResolvedAt)
             .ToListAsync(cancellationToken);
     }

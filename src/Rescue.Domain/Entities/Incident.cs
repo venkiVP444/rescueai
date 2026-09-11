@@ -6,6 +6,8 @@ namespace Rescue.Domain.Entities;
 public class Incident
 {
     public string Id { get; set; } = string.Empty;
+    public string ProjectId { get; set; } = string.Empty;
+    public string Environment { get; set; } = "production";
     public string Title { get; set; } = string.Empty;
     public string Service { get; set; } = string.Empty;
     public SeverityLevel Severity { get; set; } = SeverityLevel.Critical;

@@ -5,6 +5,8 @@ namespace Rescue.Domain.Entities;
 public class IncidentMemory
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string ProjectId { get; set; } = string.Empty;
+    public string Environment { get; set; } = "production";
     public string IncidentId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Service { get; set; } = string.Empty;

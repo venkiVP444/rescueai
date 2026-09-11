@@ -48,6 +48,10 @@ builder.Services.AddDbContext<RescueDbContext>(options =>
 // Domain & Infrastructure DI Registration
 builder.Services.AddSingleton<IMossRetrievalService, MossRetrievalService>();
 builder.Services.AddScoped<IMemoryService, Rescue.Infrastructure.Services.MemoryService>();
+builder.Services.AddScoped<IProjectService, Rescue.Infrastructure.Services.ProjectService>();
+builder.Services.AddScoped<IGenericIncidentEngine, GenericIncidentEngine>();
+builder.Services.AddScoped<IEventIngestionService, Rescue.Infrastructure.Services.EventIngestionService>();
+builder.Services.AddScoped<IRepositoryProvider, GitHubRepositoryProvider>();
 builder.Services.AddScoped<IIncidentCorrelationEngine, IncidentCorrelationEngine>();
 builder.Services.AddScoped<IPatchEngine, PatchEngine>();
 builder.Services.AddScoped<IValidationEngine, ValidationEngine>();
@@ -64,13 +68,15 @@ app.UseCors();
 app.MapControllers();
 app.MapHub<RescueHub>("/hubs/rescue");
 
-// Auto-migrate SQLite schema and seed baseline memories
+// Auto-migrate SQLite schema and seed baseline memories and default project
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<RescueDbContext>();
     db.Database.EnsureCreated();
     var memoryService = scope.ServiceProvider.GetRequiredService<IMemoryService>();
     await memoryService.SeedBaselineMemoriesAsync();
+    var projectService = scope.ServiceProvider.GetRequiredService<IProjectService>();
+    await projectService.SeedDefaultProjectAsync();
 }
 
 app.Run();

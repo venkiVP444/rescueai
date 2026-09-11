@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Activity, RefreshCw, Play, Layers, Server, Cpu, FileText, CheckCircle } from 'lucide-react';
+import { Shield, Activity, RefreshCw, Play, Layers, Server, Cpu, FileText, CheckCircle, Radio } from 'lucide-react';
 import { AutonomyMode, MossObservabilityStats } from '../types';
 
 interface TopNavProps {
@@ -83,6 +83,14 @@ export const TopNav: React.FC<TopNavProps> = ({
             >
               <FileText style={{ width: 14, height: 14 }} />
               <span>Architecture &amp; PRD</span>
+            </button>
+
+            <button
+              onClick={() => onSelectTab('integrations')}
+              className={`nav-link-btn ${activeTab === 'integrations' ? 'active' : ''}`}
+            >
+              <Radio style={{ width: 14, height: 14 }} />
+              <span>Projects &amp; Integrations</span>
             </button>
           </nav>
         </div>

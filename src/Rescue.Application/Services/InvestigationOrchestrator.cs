@@ -88,6 +88,8 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         var incident = new Incident
         {
             Id = "INC-105",
+            ProjectId = "acme-commerce",
+            Environment = "production",
             Title = "PaymentService HTTP 503 Surge (42% Failure Rate)",
             Service = "PaymentService",
             Severity = SeverityLevel.Critical,
@@ -149,7 +151,7 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         };
 
         // STEP 5.5: Query RESCUE Historical Operational Memory
-        var similarMemory = await _memoryService.FindSimilarIncidentAsync(incident, cancellationToken);
+        var similarMemory = await _memoryService.FindSimilarIncidentAsync(incident, incident.ProjectId, cancellationToken);
         if (similarMemory != null)
         {
             investigation.SimilarMemoryMatch = similarMemory;
@@ -263,6 +265,8 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         // 5. Persist into RESCUE Operational Memory
         var memoryRecord = new IncidentMemory
         {
+            ProjectId = !string.IsNullOrWhiteSpace(incident.ProjectId) ? incident.ProjectId : "acme-commerce",
+            Environment = !string.IsNullOrWhiteSpace(incident.Environment) ? incident.Environment : "production",
             IncidentId = incident.Id,
             Title = incident.Title,
             Service = incident.Service,
@@ -317,6 +321,8 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         var incident = new Incident
         {
             Id = "INC-104",
+            ProjectId = "acme-commerce",
+            Environment = "production",
             Title = "PaymentService 503 Caused by Redis Pool Starvation",
             Service = "PaymentService",
             Severity = SeverityLevel.Critical,

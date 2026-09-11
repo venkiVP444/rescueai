@@ -255,3 +255,30 @@ export interface ServiceHealth {
   latencyMs: number;
   version: string;
 }
+
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  environment: string;
+  apiKeyPrefix: string;
+  repositoryUrl: string;
+  defaultBranch: string;
+  services: string[];
+  createdAt: string;
+  lastEventAt?: string;
+  isActive: boolean;
+}
+
+export interface RescueEvent {
+  eventId: string;
+  schemaVersion: string;
+  projectId: string;
+  service: string;
+  environment: string;
+  eventType: string;
+  severity: string;
+  timestamp: string;
+  data: Record<string, any>;
+  correlation: Record<string, string>;
+}

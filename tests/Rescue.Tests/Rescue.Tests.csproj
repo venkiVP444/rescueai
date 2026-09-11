@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Rescue.Domain\Rescue.Domain.csproj" />
     <ProjectReference Include="..\..\src\Rescue.Application\Rescue.Application.csproj" />
     <ProjectReference Include="..\..\src\Rescue.Infrastructure\Rescue.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Rescue.Sdk\Rescue.Sdk.csproj" />
   </ItemGroup>
 
 </Project>

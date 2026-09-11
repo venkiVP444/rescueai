@@ -17,14 +17,36 @@ public class RescueDbContext : DbContext
     public DbSet<MossMetric> MossMetrics => Set<MossMetric>();
     public DbSet<AgentActivity> AgentActivities => Set<AgentActivity>();
     public DbSet<IncidentMemory> IncidentMemories => Set<IncidentMemory>();
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<RescueEvent> IngestedEvents => Set<RescueEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Project>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Services)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+        });
+
+        modelBuilder.Entity<RescueEvent>(entity =>
+        {
+            entity.HasKey(e => e.EventId);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.EventType);
+            entity.HasIndex(e => e.Timestamp);
+            entity.Ignore(e => e.Data);
+            entity.Ignore(e => e.Correlation);
+        });
+
         modelBuilder.Entity<Incident>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProjectId);
             entity.Ignore(e => e.Investigation);
             entity.Ignore(e => e.Correlation);
             entity.Ignore(e => e.ProposedPatch);
@@ -58,6 +80,7 @@ public class RescueDbContext : DbContext
         modelBuilder.Entity<IncidentMemory>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.Service);
             entity.HasIndex(e => e.IncidentId);
             entity.HasIndex(e => e.ResolvedAt);
