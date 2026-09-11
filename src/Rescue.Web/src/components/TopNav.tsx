@@ -107,7 +107,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           <div className="latency-indicator" title="Hardware-timed Moss semantic search">
             <Activity style={{ width: 13, height: 13, color: 'var(--info-cyan)' }} />
             <span>Moss P50:</span>
-            <strong>{mossStats ? `${mossStats.p50Ms} ms` : '0.74 ms'}</strong>
+            <strong>{mossStats && mossStats.totalQueries > 0 ? `${mossStats.p50Ms} ms` : 'Ready'}</strong>
           </div>
 
           {/* SRE Simulation Trigger */}
@@ -118,7 +118,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             title="Inject external API change drift & correlate production 503 incident"
           >
             <Play style={{ width: 13, height: 13 }} />
-            <span>{loading ? 'Executing Pipeline...' : 'Trigger Incident Simulation'}</span>
+            <span>{loading ? 'Correlating Incident...' : 'Play Killer Demo (P0)'}</span>
           </button>
 
           {/* Reset Environment */}

@@ -105,7 +105,7 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
           {isResolved && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--healthy-green)', fontWeight: 700, fontSize: 12, background: 'var(--healthy-bg)', border: '1px solid var(--healthy-border)', padding: '6px 12px', borderRadius: 6 }}>
               <CheckCircle style={{ width: 14, height: 14 }} />
-              Verified in Staging Sandbox (42% → 1.8% Error Rate)
+              Verified in Staging Sandbox ({verification?.beforeErrorRate ?? 42.0}% → {verification?.afterErrorRate ?? 1.8}% Error Rate)
             </span>
           )}
         </div>

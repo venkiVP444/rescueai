@@ -92,6 +92,35 @@ export const MossObservabilityView: React.FC<MossObservabilityViewProps> = ({
         </button>
       </div>
 
+      {/* Moss vs RESCUE Memory Conceptual Distinction Callout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+        <div style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', borderRadius: 8, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <Cpu style={{ width: 16, height: 16, color: 'var(--info-cyan)' }} />
+            <strong style={{ fontSize: 13, color: 'var(--info-cyan)' }}>Moss: Sub-10ms Semantic Retrieval</strong>
+            <span className="status-chip" style={{ fontSize: 10, marginLeft: 'auto', color: 'var(--healthy-green)' }}>
+              {stats?.currentProvider === 'MossCloud' ? 'Cloud Moss Engine' : 'Local Fallback Engine'}
+            </span>
+          </div>
+          <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+            Retrieves current operational reality (OpenAPI specs, AST code nodes, runbooks, metrics) with sub-10ms hardware timing. Moss serves as the real-time context retrieval layer during active triage.
+          </p>
+        </div>
+
+        <div style={{ background: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.25)', borderRadius: 8, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <Database style={{ width: 16, height: 16, color: '#C084FC' }} />
+            <strong style={{ fontSize: 13, color: '#D8B4FE' }}>RESCUE Memory: Persistent Operational Store</strong>
+            <span className="status-chip" style={{ fontSize: 10, marginLeft: 'auto', background: 'rgba(192, 132, 252, 0.15)', color: '#C084FC' }}>
+              SQLite + EF Core
+            </span>
+          </div>
+          <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+            Persistent structured operational memory of previously resolved incidents, historical root causes, verified diffs, and staging outcomes. Recalls prior incidents (e.g., INC-001) to accelerate resolution.
+          </p>
+        </div>
+      </div>
+
       {/* Latency Percentiles Grid */}
       <div className="ent-metrics-row">
         {[
