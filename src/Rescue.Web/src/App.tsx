@@ -14,6 +14,7 @@ import {
   MossObservabilityStats,
   MossBenchmarkResult
 } from './types';
+import { ShieldAlert, CheckCircle, AlertTriangle, FileCode } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'dots' | 'moss' | 'explorer' | 'submission'>('dots');
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
   const [mossStats, setMossStats] = useState<MossObservabilityStats | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(false);
   const [isFixModalOpen, setIsFixModalOpen] = useState<boolean>(false);
+  const [dismissApprovalBanner, setDismissApprovalBanner] = useState<boolean>(false);
 
   // Initialize SignalR & initial load
   useEffect(() => {
@@ -37,11 +39,19 @@ export const App: React.FC = () => {
     connection.on('IncidentDetected', (inc: Incident) => {
       setIncident(inc);
       setSystemStatus('Critical');
+      setDismissApprovalBanner(false);
     });
 
     connection.on('CorrelationCompleted', (corr: any) => {
       setIncident(prev => prev ? { ...prev, correlation: corr } : prev);
       setActiveTab('dots'); // Automatically bring engineer to the showstopper view
+    });
+
+    connection.on('MemoryMatchFound', (match: any) => {
+      setIncident(prev => prev ? {
+        ...prev,
+        investigation: prev.investigation ? { ...prev.investigation, similarMemoryMatch: match } : undefined
+      } : prev);
     });
 
     connection.on('DiagnosisCompleted', (diag: any) => {
@@ -56,8 +66,14 @@ export const App: React.FC = () => {
       setIncident(prev => prev ? { ...prev, validationReport: val } : prev);
     });
 
-    connection.on('ApprovalRequired', () => {
-      setIncident(prev => prev ? { ...prev, status: 'AwaitingApproval' } : prev);
+    connection.on('ApprovalRequired', (payload: any) => {
+      setIncident(prev => prev ? {
+        ...prev,
+        status: payload?.autonomyMode === 'Observe' ? 'Investigating' : 'AwaitingApproval',
+        proposedPatch: payload?.patch || prev.proposedPatch,
+        validationReport: payload?.validation || prev.validationReport
+      } : prev);
+      setDismissApprovalBanner(false);
     });
 
     connection.on('ApprovalGranted', (appr: any) => {
@@ -87,6 +103,7 @@ export const App: React.FC = () => {
       setIncident(undefined);
       setSystemStatus('Healthy');
       setActiveTab('dots');
+      setDismissApprovalBanner(false);
       fetchDashboard();
     });
 
@@ -104,21 +121,39 @@ export const App: React.FC = () => {
         const data = await res.json();
         setServices(data.services || []);
         setMossStats(data.mossObservability);
+        if (data.autonomyMode) {
+          setAutonomyMode(data.autonomyMode as AutonomyMode);
+        }
       }
     } catch (e) {
       console.log('Dashboard fetch fallback:', e);
     }
   };
 
+  // Sync autonomy mode with backend
+  const handleSetAutonomy = async (mode: AutonomyMode) => {
+    setAutonomyMode(mode);
+    try {
+      await fetch('/api/dashboard/autonomy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mode)
+      });
+    } catch (e) {
+      console.log('Failed to sync autonomy mode:', e);
+    }
+  };
+
   // Run Killer Demo: API Change -> Production Incident
   const handlePlayKillerDemo = async () => {
     setLoading(true);
+    setDismissApprovalBanner(false);
     try {
       const res = await fetch('/api/demo/scenario/api-incident', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setIncident(data.incident);
-        setSystemStatus('Critical');
+        setSystemStatus(data.incident.status === 'Resolved' ? 'Healthy' : 'Critical');
         setActiveTab('dots'); // Highlight "RESCUE CONNECTED THE DOTS"
         fetchDashboard();
       }
@@ -135,6 +170,7 @@ export const App: React.FC = () => {
       setIncident(undefined);
       setSystemStatus('Healthy');
       setActiveTab('dots');
+      setDismissApprovalBanner(false);
       fetchDashboard();
     } finally {
       setLoading(false);
@@ -151,6 +187,7 @@ export const App: React.FC = () => {
         const data = await res.json();
         setIncident(data);
         setSystemStatus('Healthy');
+        setDismissApprovalBanner(true);
         fetchDashboard();
       }
     } finally {
@@ -166,6 +203,7 @@ export const App: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: 'Rejected by SRE for further analysis' })
     });
+    setDismissApprovalBanner(true);
     setIsFixModalOpen(false);
   };
 
@@ -177,11 +215,13 @@ export const App: React.FC = () => {
     return data;
   };
 
+  const isAwaitingApproval = incident?.status === 'AwaitingApproval' && !dismissApprovalBanner;
+
   return (
     <div className="app-shell">
       <TopNav
         autonomyMode={autonomyMode}
-        onSetAutonomy={setAutonomyMode}
+        onSetAutonomy={handleSetAutonomy}
         systemStatus={systemStatus}
         mossStats={mossStats}
         onRunKillerDemo={handlePlayKillerDemo}
@@ -195,6 +235,7 @@ export const App: React.FC = () => {
         {activeTab === 'dots' && (
           <ConnectedTheDotsView
             incident={incident}
+            mossStats={mossStats}
             onOpenFixModal={() => setIsFixModalOpen(true)}
             onApproveAndDeploy={handleApproveAndDeploy}
           />
@@ -225,6 +266,37 @@ export const App: React.FC = () => {
           <SubmissionHubView />
         )}
       </main>
+
+      {/* Floating In-App Approval Notification Banner */}
+      {isAwaitingApproval && incident && (
+        <div className="approval-alert-banner">
+          <div className="approval-alert-title">
+            <AlertTriangle style={{ width: 18, height: 18, color: 'var(--sev1-red)' }} />
+            <span>🚨 RESCUE — Approval Required</span>
+          </div>
+          <div className="approval-alert-desc">
+            <strong>{incident.service}</strong> is failing with <strong>{incident.errorRateBefore}% HTTP 503</strong> errors.
+            Rescue correlated the incident with upstream <strong>API v4.2</strong>.
+          </div>
+          <div className="approval-alert-specs">
+            <span><strong>Root Cause:</strong> customer_id → customerId</span>
+            <span><strong>Validation:</strong> {incident.validationReport?.passedTests ?? 8}/8 tests passed</span>
+            <span><strong>Risk:</strong> LOW</span>
+          </div>
+          <div className="approval-alert-actions">
+            <button onClick={() => setIsFixModalOpen(true)} className="btn-alert-review">
+              Review
+            </button>
+            <button onClick={handleApproveAndDeploy} className="btn-alert-approve">
+              <CheckCircle style={{ width: 14, height: 14 }} />
+              Approve &amp; Deploy
+            </button>
+            <button onClick={handleReject} className="btn-alert-reject">
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Fix & Approval Modal */}
       <FixModal

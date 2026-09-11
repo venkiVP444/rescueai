@@ -59,6 +59,8 @@ public class DemoController : ControllerBase
     [HttpPost("reset")]
     public async Task<IActionResult> ResetEnvironment()
     {
+        await _orchestrator.ResetStateAsync();
+
         await _notifier.BroadcastEventAsync("EnvironmentReset", new
         {
             status = "Healthy",

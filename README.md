@@ -61,14 +61,19 @@ dotnet test RescueAI.slnx
 
 ## ⚡ Key Highlights
 - **Unified Correlation Engine (`IIncidentCorrelationEngine`):** Connects API changes, deployments, configuration regressions, and production error logs.
+- **🧠 RESCUE REMEMBERS (`IMemoryService`):** Persistent SQLite operational memory storing structured incident facts, historical resolutions, and continuous learning.
+- **Multi-Event Evidence DAG:** Visualizes all 17 causal nodes from upstream OpenAPI drift to downstream telemetry verification.
 - **Moss Retrieval Observability:** Hardware-timed latency tracking (`Stopwatch.GetTimestamp`) computing actual P50, P95, and P99 percentiles.
 - **Autonomy Levels:** Global toggle between `OBSERVE`, `RECOMMEND` (Default), and `AUTONOMOUS`.
-- **Human Approval Gate:** Mandatory human review before creating PRs or modifying environments.
+- **Human Approval Gate & In-App Alerts:** Mandatory human review before creating PRs or modifying environments.
 - **Safe Staging Sandbox:** Verification of telemetry before closing incidents (42% → 1.8%).
 
 ---
 
 ## 📚 Complete Documentation
+- [Final Verification Report](docs/FINAL_VERIFICATION.md) **(100% Verified)**
+- [Implementation Audit](docs/IMPLEMENTATION_AUDIT.md)
+- [RESCUE Operational Memory Guide](docs/MEMORY.md)
 - [Product Requirements Document (PRD)](docs/PRD.md)
 - [System Architecture](docs/ARCHITECTURE.md)
 - [3-Minute Hackathon Demo Script](docs/DEMO_SCRIPT.md)

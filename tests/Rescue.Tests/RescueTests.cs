@@ -1,14 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Rescue.Application.Interfaces;
 using Rescue.Application.Services;
 using Rescue.Domain.Entities;
 using Rescue.Domain.Enums;
 using Rescue.Domain.Interfaces;
 using Rescue.Infrastructure.Integrations;
+using Rescue.Infrastructure.Persistence;
 using Rescue.Infrastructure.Retrieval;
+using Rescue.Infrastructure.Services;
 using Xunit;
 
 namespace Rescue.Tests;
@@ -23,8 +27,11 @@ public class MockNotifier : IEventNotificationService
     }
 }
 
-public class RescueUnitTests
+public class RescueUnitTests : IDisposable
 {
+    private readonly string _testDbName;
+    private readonly RescueDbContext _dbContext;
+    private readonly IMemoryService _memoryService;
     private readonly IMossRetrievalService _mossService;
     private readonly IIncidentCorrelationEngine _correlationEngine;
     private readonly IPatchEngine _patchEngine;
@@ -35,6 +42,15 @@ public class RescueUnitTests
 
     public RescueUnitTests()
     {
+        _testDbName = $"test_rescue_{Guid.NewGuid():N}.db";
+        var options = new DbContextOptionsBuilder<RescueDbContext>()
+            .UseSqlite($"Data Source={_testDbName}")
+            .Options;
+
+        _dbContext = new RescueDbContext(options);
+        _dbContext.Database.EnsureCreated();
+
+        _memoryService = new MemoryService(_dbContext);
         _mossService = new MossRetrievalService(new HttpClient());
         _correlationEngine = new IncidentCorrelationEngine();
         _patchEngine = new PatchEngine();
@@ -42,6 +58,23 @@ public class RescueUnitTests
         _riskEngine = new RiskAssessmentEngine();
         _gitHubService = new GitHubService();
         _deploymentService = new StagingDeploymentSimulator();
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            _dbContext.Database.EnsureDeleted();
+            _dbContext.Dispose();
+            if (File.Exists(_testDbName))
+            {
+                File.Delete(_testDbName);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup exceptions on file lock
+        }
     }
 
     [Fact]
@@ -156,7 +189,8 @@ public class RescueUnitTests
             _riskEngine,
             _gitHubService,
             _deploymentService,
-            mockNotifier
+            mockNotifier,
+            _memoryService
         );
 
         // 1. Run investigation
@@ -172,6 +206,11 @@ public class RescueUnitTests
         Assert.Equal(8, incident.ValidationReport.PassedTests);
         Assert.Equal("Pending", incident.Approval?.Status);
 
+        // Verify that RESCUE REMEMBERS found similar historical incident INC-001
+        Assert.NotNull(incident.Investigation.SimilarMemoryMatch);
+        Assert.Equal("INC-001", incident.Investigation.SimilarMemoryMatch.PreviousIncidentId);
+        Assert.Contains("customer_id", incident.Investigation.SimilarMemoryMatch.PreviousRootCause);
+
         // 2. Approve & Deploy
         var resolvedIncident = await orchestrator.ApproveAndDeployAsync("INC-105", "Senior SRE");
 
@@ -182,6 +221,127 @@ public class RescueUnitTests
         Assert.NotNull(resolvedIncident.Verification);
         Assert.Equal(1.8, resolvedIncident.ErrorRateAfter);
         Assert.True(resolvedIncident.ErrorRateAfter < resolvedIncident.ErrorRateBefore);
+
+        // Verify that resolved incident was recorded into operational memory
+        var memories = await _memoryService.GetAllMemoriesAsync();
+        Assert.Contains(memories, m => m.IncidentId == "INC-105");
+    }
+
+    [Fact]
+    public async Task MemoryService_ShouldSeedBaselineAndRetrieveSimilarIncident()
+    {
+        var memories = await _memoryService.GetAllMemoriesAsync();
+        Assert.NotEmpty(memories);
+        Assert.Contains(memories, m => m.IncidentId == "INC-001");
+        Assert.Contains(memories, m => m.IncidentId == "INC-003");
+
+        var testIncident = new Incident
+        {
+            Id = "INC-999",
+            Service = "PaymentService",
+            ProblemDescription = "503 errors and customer_id rejection from external gateway"
+        };
+
+        var match = await _memoryService.FindSimilarIncidentAsync(testIncident);
+        Assert.NotNull(match);
+        Assert.Equal("INC-001", match.PreviousIncidentId);
+        Assert.True(match.MatchConfidence >= 90.0);
+        Assert.Contains("customer_id", match.RelevanceReason);
+    }
+
+    [Fact]
+    public async Task MemoryService_ShouldRecordNewResolvedIncident()
+    {
+        var newRecord = new IncidentMemory
+        {
+            IncidentId = "INC-555",
+            Title = "InventoryService Latency Regression",
+            Service = "InventoryService",
+            IncidentType = "LatencyDegradation",
+            Symptoms = "P99 latency spiked to 2400ms",
+            RootCause = "Unindexed database query on inventory catalog",
+            ProposedFixSummary = "Added index on sku_id",
+            ValidationResultSummary = "4/4 tests passed",
+            RiskLevel = "Low",
+            ResolutionOutcome = "Successfully resolved",
+            ResolvedAt = DateTime.UtcNow
+        };
+
+        await _memoryService.RecordIncidentMemoryAsync(newRecord);
+
+        var memories = await _memoryService.GetAllMemoriesAsync();
+        var retrieved = memories.Find(m => m.IncidentId == "INC-555");
+        Assert.NotNull(retrieved);
+        Assert.Equal("InventoryService", retrieved.Service);
+        Assert.Equal("Unindexed database query on inventory catalog", retrieved.RootCause);
+    }
+
+    [Fact]
+    public async Task InvestigationOrchestrator_ShouldRespectAutonomyModes()
+    {
+        var mockNotifier = new MockNotifier();
+        var apiEngine = new ApiChangeEngine(_mossService, _patchEngine, _validationEngine);
+        var orchestrator = new InvestigationOrchestrator(
+            _mossService,
+            _correlationEngine,
+            apiEngine,
+            _patchEngine,
+            _validationEngine,
+            _riskEngine,
+            _gitHubService,
+            _deploymentService,
+            mockNotifier,
+            _memoryService
+        );
+
+        // TEST 1: OBSERVE Mode (Alert only, no patch proposal)
+        orchestrator.SetAutonomyMode(AutonomyMode.Observe);
+        var observeIncident = await orchestrator.RunKillerDemoAsync();
+
+        Assert.Equal(IncidentStatus.Investigating, observeIncident.Status);
+        Assert.Null(observeIncident.ProposedPatch);
+
+        // TEST 2: AUTONOMOUS Mode (Auto-deploys to staging sandbox)
+        orchestrator.SetAutonomyMode(AutonomyMode.Autonomous);
+        var autoIncident = await orchestrator.RunKillerDemoAsync();
+
+        Assert.Equal(IncidentStatus.Resolved, autoIncident.Status);
+        Assert.Equal("Approved", autoIncident.Approval?.Status);
+        Assert.NotNull(autoIncident.GitHubPr);
+        Assert.NotNull(autoIncident.Verification);
+    }
+
+    [Fact]
+    public async Task InvestigationOrchestrator_ShouldResetStateAndSupportReplay()
+    {
+        var mockNotifier = new MockNotifier();
+        var apiEngine = new ApiChangeEngine(_mossService, _patchEngine, _validationEngine);
+        var orchestrator = new InvestigationOrchestrator(
+            _mossService,
+            _correlationEngine,
+            apiEngine,
+            _patchEngine,
+            _validationEngine,
+            _riskEngine,
+            _gitHubService,
+            _deploymentService,
+            mockNotifier,
+            _memoryService
+        );
+
+        // Run once
+        var incident = await orchestrator.RunKillerDemoAsync();
+        Assert.NotNull(orchestrator.GetActiveIncident());
+
+        // Reset
+        await orchestrator.ResetStateAsync();
+        Assert.Null(orchestrator.GetActiveIncident());
+        Assert.Null(orchestrator.GetActiveApiChange());
+        Assert.Equal(AutonomyMode.Recommend, orchestrator.GetAutonomyMode());
+
+        // Replay again immediately
+        var replayedIncident = await orchestrator.RunKillerDemoAsync();
+        Assert.NotNull(replayedIncident);
+        Assert.Equal("INC-105", replayedIncident.Id);
     }
 }
-

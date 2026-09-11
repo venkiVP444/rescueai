@@ -121,6 +121,44 @@ export interface DeploymentVerification {
   completedAt: string;
 }
 
+export interface MemoryMatchResult {
+  previousIncidentId: string;
+  title: string;
+  service: string;
+  previousRootCause: string;
+  previousFix: string;
+  previousValidation: string;
+  previousOutcome: string;
+  relevanceReason: string;
+  matchConfidence: number;
+  resolvedAt: string;
+  daysAgo: number;
+}
+
+export interface IncidentMemory {
+  id: string;
+  incidentId: string;
+  title: string;
+  service: string;
+  incidentType: string;
+  symptoms: string;
+  rootCause: string;
+  relatedApiChangeId?: string;
+  affectedFiles: string;
+  affectedServices: string;
+  proposedFixSummary: string;
+  validationResultSummary: string;
+  riskLevel: string;
+  approvalResult: string;
+  gitHubPrReference?: string;
+  deploymentResult: string;
+  verificationResult: string;
+  resolutionOutcome: string;
+  resolvedAt: string;
+  evidenceReferences: string;
+  isBaseline: boolean;
+}
+
 export interface Investigation {
   id: string;
   incidentId: string;
@@ -133,6 +171,7 @@ export interface Investigation {
   evidenceItems: EvidenceItem[];
   timeline: TimelineEvent[];
   evidenceGraph: EvidenceGraph;
+  similarMemoryMatch?: MemoryMatchResult;
 }
 
 export interface Incident {

@@ -12,22 +12,29 @@ import {
   Server,
   Activity,
   Cpu,
-  ExternalLink
+  ExternalLink,
+  Brain,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
-import { Incident } from '../types';
+import { Incident, MossObservabilityStats } from '../types';
 
 interface ConnectedTheDotsViewProps {
   incident?: Incident;
+  mossStats?: MossObservabilityStats;
   onOpenFixModal: () => void;
   onApproveAndDeploy: () => void;
 }
 
 export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
   incident,
+  mossStats,
   onOpenFixModal,
   onApproveAndDeploy
 }) => {
   const [selectedTab, setSelectedTab] = useState<'diff' | 'tests' | 'logs'>('diff');
+  const [selectedDagNodeId, setSelectedDagNodeId] = useState<string>('n9');
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState<boolean>(false);
 
   if (!incident || !incident.correlation) {
     return (
@@ -41,22 +48,22 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
         <p style={{ maxWidth: 480, margin: '0 auto 16px auto', fontSize: 12, color: 'var(--text-secondary)' }}>
           Rescue SRE engine is passively monitoring OpenAPI drift, telemetry thresholds, and application logs.
         </p>
-        <button
-          onClick={() => {}}
-          style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border-muted)', color: 'var(--text-primary)', padding: '6px 14px', borderRadius: 6, fontSize: 12, cursor: 'default' }}
-        >
-          Click "Trigger Incident Simulation" in top header to run live scenario
-        </button>
+        <div style={{ display: 'inline-flex', gap: 8, background: 'var(--bg-surface-2)', border: '1px solid var(--border-muted)', color: 'var(--text-primary)', padding: '6px 14px', borderRadius: 6, fontSize: 12 }}>
+          Click "Play Killer Demo" in the top header to run the live P0 incident flow
+        </div>
       </div>
     );
   }
 
-  const { correlation, proposedPatch, validationReport, approval, verification } = incident;
+  const { correlation, proposedPatch, validationReport, approval, verification, investigation } = incident;
   const isResolved = incident.status === 'Resolved';
+  const similarMemory = investigation?.similarMemoryMatch;
+  const dagNodes = investigation?.evidenceGraph?.nodes || [];
+  const selectedNode = dagNodes.find(n => n.id === selectedDagNodeId) || dagNodes[0];
 
   return (
     <div>
-      {/* Incident Header */}
+      {/* Incident Header Bar */}
       <div className="incident-header-bar">
         <div>
           <div className="incident-badge-row">
@@ -71,6 +78,9 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
             </span>
             <span className="status-chip" style={{ color: 'var(--info-cyan)' }}>
               Confidence: {correlation.score}%
+            </span>
+            <span className="status-chip" style={{ background: 'rgba(192, 132, 252, 0.15)', color: '#C084FC', border: '1px solid rgba(192, 132, 252, 0.3)' }}>
+              🧠 Memory Grounded
             </span>
           </div>
 
@@ -101,6 +111,72 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
         </div>
       </div>
 
+      {/* Multi-Event Evidence DAG (17 Causal Nodes) */}
+      {dagNodes.length > 0 && (
+        <div className="dag-panel">
+          <div className="dag-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Layers style={{ width: 14, height: 14, color: 'var(--info-cyan)' }} />
+              <span style={{ fontWeight: 700, fontSize: 12.5, color: '#FFF' }}>
+                Multi-Event Evidence DAG ({dagNodes.length} Causal Nodes Correlated by Rescue)
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+              Click node to inspect causal evidence snippet
+            </span>
+          </div>
+
+          <div className="dag-scroll-container">
+            {dagNodes.map((node, index) => {
+              const isSelected = node.id === selectedDagNodeId;
+              const isNodeResolved = isResolved;
+              const isHighlight = node.id === 'n9'; // "RESCUE CONNECTED THE DOTS"
+
+              return (
+                <React.Fragment key={node.id}>
+                  <div
+                    onClick={() => setSelectedDagNodeId(node.id)}
+                    className={`dag-node-card ${isSelected ? 'selected' : ''} ${isNodeResolved ? 'resolved' : ''} ${isHighlight ? 'active-step' : ''}`}
+                    title={node.snippet}
+                  >
+                    <div className="dag-node-header">
+                      <span className="dag-node-type" style={{ color: isHighlight ? 'var(--sev2-amber)' : undefined }}>
+                        {node.nodeType}
+                      </span>
+                      {isNodeResolved ? (
+                        <Check style={{ width: 11, height: 11, color: 'var(--healthy-green)' }} />
+                      ) : (
+                        <span style={{ fontSize: 9.5, color: 'var(--text-tertiary)' }}>#{index + 1}</span>
+                      )}
+                    </div>
+                    <div className="dag-node-title">{node.label}</div>
+                    <div className="dag-node-sub">{node.subtitle}</div>
+                  </div>
+                  {index < dagNodes.length - 1 && (
+                    <span className="dag-connector">
+                      <ChevronRight style={{ width: 13, height: 13 }} />
+                    </span>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          {selectedNode && (
+            <div className="dag-inspector-bar">
+              <div>
+                <strong style={{ color: 'var(--info-cyan)' }}>Node #{selectedNode.id} [{selectedNode.nodeType}]:</strong>{' '}
+                <span style={{ color: '#FFF', fontWeight: 600 }}>{selectedNode.label}</span> —{' '}
+                <span style={{ color: 'var(--text-secondary)' }}>{selectedNode.snippet}</span>
+              </div>
+              <span className="status-chip" style={{ fontSize: 10 }}>
+                {selectedNode.subtitle}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Two-Column Operational Layout */}
       <div className="two-col-layout">
         {/* Left Column: Diagnostics, Logs, Diff, Tests */}
@@ -113,7 +189,7 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                 <span>Root Cause &amp; Upstream Correlation Analysis</span>
               </div>
               <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
-                Moss Retrieval: 0.74 ms
+                Moss Hardware Retrieval: {mossStats && mossStats.p50Ms > 0 ? `${mossStats.p50Ms} ms` : 'Hardware Measured'}
               </span>
             </div>
             <div className="sre-panel-body">
@@ -157,6 +233,90 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
               </div>
             </div>
           </div>
+
+          {/* 🧠 RESCUE REMEMBERS Panel */}
+          {similarMemory && (
+            <div className="sre-panel rescue-remembers-panel">
+              <div className="sre-panel-header" style={{ background: 'linear-gradient(90deg, rgba(147, 51, 234, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)' }}>
+                <div className="sre-panel-title" style={{ color: '#D8B4FE' }}>
+                  <Brain style={{ width: 15, height: 15, color: '#C084FC' }} />
+                  <span>🧠 RESCUE REMEMBERS — Persistent Operational Memory</span>
+                </div>
+                <span className="memory-badge">
+                  {similarMemory.matchConfidence}% Pattern Confidence
+                </span>
+              </div>
+              <div className="sre-panel-body">
+                <div className="memory-match-card">
+                  <div className="memory-header-row">
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>
+                        Similar Incident Found: {similarMemory.title} ({similarMemory.previousIncidentId})
+                      </div>
+                      <div style={{ fontSize: 11, color: '#A78BFA', marginTop: 2 }}>
+                        Resolved {similarMemory.daysAgo} days ago • Target Service: {similarMemory.service}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsMemoryModalOpen(!isMemoryModalOpen)}
+                      style={{ background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.4)', color: '#D8B4FE', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      {isMemoryModalOpen ? 'Hide History' : 'View Previous Investigation'}
+                    </button>
+                  </div>
+
+                  <div className="memory-grid">
+                    <div className="memory-item">
+                      <div className="memory-item-label">Historical Root Cause</div>
+                      <div className="memory-item-val" style={{ color: '#F87171' }}>
+                        {similarMemory.previousRootCause}
+                      </div>
+                    </div>
+                    <div className="memory-item">
+                      <div className="memory-item-label">Previous Fix Applied</div>
+                      <div className="memory-item-val" style={{ color: 'var(--info-cyan)' }}>
+                        {similarMemory.previousFix}
+                      </div>
+                    </div>
+                    <div className="memory-item">
+                      <div className="memory-item-label">Validation Verification</div>
+                      <div className="memory-item-val" style={{ color: 'var(--healthy-green)' }}>
+                        {similarMemory.previousValidation}
+                      </div>
+                    </div>
+                    <div className="memory-item">
+                      <div className="memory-item-label">Resolution Outcome</div>
+                      <div className="memory-item-val" style={{ color: 'var(--healthy-green)' }}>
+                        ✓ {similarMemory.previousOutcome}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: 11.5, color: '#D1D5DB', background: 'rgba(0, 0, 0, 0.3)', padding: '8px 12px', borderRadius: 4, borderLeft: '3px solid #C084FC' }}>
+                    <strong style={{ color: '#D8B4FE' }}>Relevance Reason: </strong>
+                    {similarMemory.relevanceReason}
+                  </div>
+
+                  {isMemoryModalOpen && (
+                    <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-surface-1)', border: '1px solid var(--border-default)', borderRadius: 6, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                      <div style={{ fontWeight: 700, color: '#FFF', marginBottom: 6 }}>
+                        Historical Investigation Record: {similarMemory.previousIncidentId}
+                      </div>
+                      <p style={{ marginBottom: 6 }}>
+                        RESCUE recalled this incident from its SQLite Operational Memory store. When Acme Payments previously updated API contracts without backward compatibility, the PaymentApiClient broke with HTTP 503 errors.
+                      </p>
+                      <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <li>Historical Patch: Renamed customer_id to customerId in ApiClient.cs</li>
+                        <li>Validation: Ran 8 automated migration unit tests with 100% pass rate</li>
+                        <li>Approval: Approved by Senior SRE Engineer and deployed safely to staging</li>
+                        <li>Verified Recovery: Error rate dropped to 1.6%</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Tabbed Inspector: Unified Diff, Tests, Live Error Logs */}
           <div className="sre-panel">
@@ -272,7 +432,7 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                     { ts: '10:04:13.150', lvl: 'WARN', msg: 'RedisPool.cs:72: Active connection pool reached capacity limit (200/200).' },
                     { ts: '10:04:13.201', lvl: 'ERROR', msg: 'OrderService.cs:88: HTTP 503 Service Unavailable received from PaymentService.' },
                     { ts: '10:04:14.005', lvl: 'INFO', msg: 'Rescue Watcher: Prometheus threshold breach detected (Error rate > 5%).' },
-                    { ts: '10:04:14.008', lvl: 'INFO', msg: 'Rescue Moss: In-process semantic search matched 3 documents in 0.74ms.' },
+                    { ts: '10:04:14.008', lvl: 'INFO', msg: 'Rescue Moss: Fast hybrid semantic search matched 4 documents.' },
                     { ts: '10:04:14.015', lvl: 'INFO', msg: 'Rescue Core: Correlated incident INC-105 with Acme Payments v4.2 release.' }
                   ].map((row, i) => (
                     <div key={i} className="log-row">
@@ -384,28 +544,44 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                 <span>Moss Retrieval Telemetry</span>
               </div>
               <span style={{ fontSize: 10, color: 'var(--healthy-green)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                SUB-10MS
+                {mossStats && mossStats.totalQueries > 0 ? `${mossStats.totalQueries} QUERIES` : 'READY'}
               </span>
             </div>
             <div className="sre-panel-body" style={{ fontSize: 11.5 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-muted)' }}>
                 <span style={{ color: 'var(--text-tertiary)' }}>Hardware Timing (P50):</span>
-                <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--info-cyan)' }}>0.74 ms</strong>
+                <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--info-cyan)' }}>
+                  {mossStats && mossStats.p50Ms > 0 ? `${mossStats.p50Ms} ms` : 'Measured'}
+                </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-muted)' }}>
-                <span style={{ color: 'var(--text-tertiary)' }}>Ingested Corpus:</span>
-                <strong style={{ fontFamily: 'var(--font-mono)', color: '#FFF' }}>37 Specs</strong>
+                <span style={{ color: 'var(--text-tertiary)' }}>P95 / P99 Latency:</span>
+                <strong style={{ fontFamily: 'var(--font-mono)', color: '#FFF' }}>
+                  {mossStats && mossStats.p95Ms > 0 ? `${mossStats.p95Ms} ms / ${mossStats.p99Ms} ms` : 'Active'}
+                </strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-muted)' }}>
-                <span style={{ color: 'var(--text-tertiary)' }}>Active Engine:</span>
-                <strong style={{ color: 'var(--healthy-green)' }}>Local Engine</strong>
+                <span style={{ color: 'var(--text-tertiary)' }}>Active Retrieval Provider:</span>
+                <strong style={{ color: 'var(--healthy-green)' }}>
+                  {mossStats?.currentProvider === 'MossCloud' ? 'Moss Cloud REST' : 'Local Retrieval Fallback'}
+                </strong>
               </div>
               <div style={{ marginTop: 8, color: 'var(--text-tertiary)', fontSize: 11 }}>
-                Retrieved Context:
+                Retrieved Context Documents:
                 <ul style={{ paddingLeft: 14, marginTop: 4, color: 'var(--text-secondary)' }}>
-                  <li>api/acme_payments_v4.2_spec.yaml</li>
-                  <li>code/PaymentService/PaymentProcessor.cs</li>
-                  <li>tests/PaymentService.Tests.cs</li>
+                  {investigation?.evidenceItems && investigation.evidenceItems.length > 0 ? (
+                    investigation.evidenceItems.slice(0, 4).map((item, idx) => (
+                      <li key={idx}>
+                        <span style={{ color: 'var(--info-cyan)', fontFamily: 'var(--font-mono)' }}>[{item.type}]</span> {item.title}
+                      </li>
+                    ))
+                  ) : (
+                    <>
+                      <li>api/external-api-v2.json</li>
+                      <li>code/ApiClient.cs</li>
+                      <li>tests/ApiClientTests.cs</li>
+                    </>
+                  )}
                 </ul>
               </div>
             </div>
@@ -419,7 +595,7 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                 <span>Operational Audit Trail</span>
               </div>
               <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
-                5 Events
+                {(incident.investigation?.timeline || []).length} Events
               </span>
             </div>
             <div className="sre-panel-body">

@@ -16,4 +16,5 @@ public class Investigation
     public List<EvidenceItem> EvidenceItems { get; set; } = new();
     public List<TimelineEvent> Timeline { get; set; } = new();
     public EvidenceGraph EvidenceGraph { get; set; } = new();
+    public MemoryMatchResult? SimilarMemoryMatch { get; set; }
 }

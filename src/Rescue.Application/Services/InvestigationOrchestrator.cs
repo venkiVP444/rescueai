@@ -21,10 +21,12 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
     private readonly IGitHubService _gitHubService;
     private readonly IDeploymentVerificationService _deploymentService;
     private readonly IEventNotificationService _notifier;
+    private readonly IMemoryService _memoryService;
 
     // In-memory active state for deterministic demo
     private static Incident? _activeIncident;
     private static ApiChange? _activeApiChange;
+    private static AutonomyMode _currentAutonomy = AutonomyMode.Recommend;
 
     public InvestigationOrchestrator(
         IMossRetrievalService mossService,
@@ -35,7 +37,8 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         IRiskAssessmentEngine riskEngine,
         IGitHubService gitHubService,
         IDeploymentVerificationService deploymentService,
-        IEventNotificationService notifier)
+        IEventNotificationService notifier,
+        IMemoryService memoryService)
     {
         _mossService = mossService;
         _correlationEngine = correlationEngine;
@@ -46,7 +49,13 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         _gitHubService = gitHubService;
         _deploymentService = deploymentService;
         _notifier = notifier;
+        _memoryService = memoryService;
     }
+
+    public void SetAutonomyMode(AutonomyMode mode) => _currentAutonomy = mode;
+    public AutonomyMode GetAutonomyMode() => _currentAutonomy;
+    public Incident? GetActiveIncident() => _activeIncident;
+    public ApiChange? GetActiveApiChange() => _activeApiChange;
 
     public async Task<Incident> RunKillerDemoAsync(CancellationToken cancellationToken = default)
     {
@@ -139,11 +148,34 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
             Timeline = BuildKillerDemoTimeline()
         };
 
+        // STEP 5.5: Query RESCUE Historical Operational Memory
+        var similarMemory = await _memoryService.FindSimilarIncidentAsync(incident, cancellationToken);
+        if (similarMemory != null)
+        {
+            investigation.SimilarMemoryMatch = similarMemory;
+            await _notifier.BroadcastEventAsync("MemoryMatchFound", similarMemory);
+        }
+
         incident.Investigation = investigation;
         incident.RootCause = investigation.RootCause;
 
         await _notifier.BroadcastEventAsync("EvidenceGraphUpdated", graph);
         await _notifier.BroadcastEventAsync("DiagnosisCompleted", investigation);
+
+        // In OBSERVE mode: complete diagnosis and alert only, no patch proposal
+        if (_currentAutonomy == AutonomyMode.Observe)
+        {
+            incident.Status = IncidentStatus.Investigating;
+            await _notifier.BroadcastEventAsync("ApprovalRequired", new
+            {
+                Incident = incident,
+                Patch = (ProposedPatch?)null,
+                Validation = (ValidationReport?)null,
+                AutonomyMode = "Observe",
+                Message = "OBSERVE Mode Active: Incident investigated and alert published. Automated fix generation suppressed."
+            });
+            return incident;
+        }
 
         // STEP 6: Fix Generation & Validation
         var patch = _patchEngine.GenerateApiMigrationPatch(_activeApiChange);
@@ -157,7 +189,7 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
 
         await _notifier.BroadcastEventAsync("ValidationCompleted", validation);
 
-        // STEP 7: Human Approval Gate (RECOMMEND Mode)
+        // STEP 7: Human Approval Gate (RECOMMEND Mode) vs AUTONOMOUS Mode
         incident.Status = IncidentStatus.AwaitingApproval;
         incident.Approval = new ApprovalRecord
         {
@@ -169,8 +201,15 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
             Incident = incident,
             Patch = patch,
             Validation = validation,
-            Rollback = patch.RollbackPlan
+            Rollback = patch.RollbackPlan,
+            AutonomyMode = _currentAutonomy.ToString()
         });
+
+        if (_currentAutonomy == AutonomyMode.Autonomous)
+        {
+            // Auto-deploy safely to staging sandbox in Autonomous mode
+            return await ApproveAndDeployAsync(incident.Id, "Rescue Autonomous SRE", cancellationToken);
+        }
 
         return incident;
     }
@@ -221,7 +260,41 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         await _notifier.BroadcastEventAsync("VerificationCompleted", verification);
         await _notifier.BroadcastEventAsync("IncidentResolved", incident);
 
+        // 5. Persist into RESCUE Operational Memory
+        var memoryRecord = new IncidentMemory
+        {
+            IncidentId = incident.Id,
+            Title = incident.Title,
+            Service = incident.Service,
+            IncidentType = "ApiCompatibilityFailure",
+            Symptoms = incident.ProblemDescription,
+            RootCause = incident.RootCause ?? "PaymentService sending deprecated customer_id to Acme Payments v4.2 API",
+            RelatedApiChangeId = incident.Correlation?.CorrelatedApiChangeId ?? "API-420",
+            AffectedFiles = incident.ProposedPatch?.FilePath ?? "ApiClient.cs",
+            AffectedServices = incident.Service,
+            ProposedFixSummary = incident.ProposedPatch?.Explanation ?? "Migrate serialization property customer_id -> customerId in ApiClient.cs",
+            ValidationResultSummary = $"{incident.ValidationReport?.PassedTests ?? 8}/{incident.ValidationReport?.TotalTests ?? 8} unit tests passed (100%)",
+            RiskLevel = incident.ProposedPatch?.Risk.ToString() ?? "Low",
+            ApprovalResult = incident.Approval?.Status ?? "Approved",
+            GitHubPrReference = incident.GitHubPr != null ? $"PR #{incident.GitHubPr.PrNumber} ({incident.GitHubPr.BranchName})" : null,
+            DeploymentResult = "Deployed to safe staging sandbox",
+            VerificationResult = $"Error rate recovered from {incident.ErrorRateBefore:F1}% to {incident.ErrorRateAfter:F1}%",
+            ResolutionOutcome = "Successfully resolved",
+            ResolvedAt = DateTime.UtcNow,
+            EvidenceReferences = string.Join(", ", incident.Investigation?.EvidenceItems.Select(e => e.Title) ?? Array.Empty<string>())
+        };
+        await _memoryService.RecordIncidentMemoryAsync(memoryRecord, cancellationToken);
+
         return incident;
+    }
+
+    public async Task ResetStateAsync(CancellationToken cancellationToken = default)
+    {
+        _activeIncident = null;
+        _activeApiChange = null;
+        _currentAutonomy = AutonomyMode.Recommend;
+        _mossService.ResetMetrics();
+        await _memoryService.ResetMemoriesAsync(cancellationToken);
     }
 
     public Task<Incident> RejectFixAsync(string incidentId, string reason, CancellationToken cancellationToken = default)

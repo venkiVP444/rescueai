@@ -52,7 +52,7 @@ public class MossRetrievalService : IMossRetrievalService
     public async Task<MossSearchResult> SearchAsync(string query, MossSearchOptions? options = null, CancellationToken cancellationToken = default)
     {
         options ??= new MossSearchOptions();
-        var sw = Stopwatch.StartNew();
+        var startTimestamp = Stopwatch.GetTimestamp();
 
         List<EvidenceItem> hits;
         RetrievalProvider usedProvider;
@@ -77,8 +77,8 @@ public class MossRetrievalService : IMossRetrievalService
             usedProvider = RetrievalProvider.LocalRetrievalFallback;
         }
 
-        sw.Stop();
-        var latencyMs = Math.Round(sw.Elapsed.TotalMilliseconds, 2);
+        var endTimestamp = Stopwatch.GetTimestamp();
+        var latencyMs = Math.Round((double)(endTimestamp - startTimestamp) * 1000.0 / Stopwatch.Frequency, 2);
 
         // Record high-resolution metric
         var metric = new MossMetric
@@ -132,11 +132,11 @@ public class MossRetrievalService : IMossRetrievalService
         if (metrics.Count == 0)
         {
             return new MossObservabilityStats(
-                P50Ms: 2.1,
-                P95Ms: 4.8,
-                P99Ms: 7.2,
-                AverageMs: 2.9,
-                LastQueryLatencyMs: 2.4,
+                P50Ms: 0.0,
+                P95Ms: 0.0,
+                P99Ms: 0.0,
+                AverageMs: 0.0,
+                LastQueryLatencyMs: 0.0,
                 TotalQueries: 0,
                 CurrentProvider: _configuredProvider,
                 RecentQueries: new List<MossMetric>()
@@ -290,5 +290,10 @@ public class MossRetrievalService : IMossRetrievalService
         int k = (int)n;
         double d = n - k;
         return sequence[k - 1] + d * (sequence[k] - sequence[k - 1]);
+    }
+
+    public void ResetMetrics()
+    {
+        while (_metricsQueue.TryDequeue(out _)) { }
     }
 }

@@ -39,4 +39,5 @@ public interface IMossRetrievalService
     Task<List<EvidenceItem>> SearchEvidenceAsync(List<string> queries, CancellationToken cancellationToken = default);
     MossObservabilityStats GetObservabilityStats();
     Task<MossBenchmarkResult> RunBenchmarkAsync();
+    void ResetMetrics();
 }

@@ -16,6 +16,7 @@ public class RescueDbContext : DbContext
     public DbSet<ApiChange> ApiChanges => Set<ApiChange>();
     public DbSet<MossMetric> MossMetrics => Set<MossMetric>();
     public DbSet<AgentActivity> AgentActivities => Set<AgentActivity>();
+    public DbSet<IncidentMemory> IncidentMemories => Set<IncidentMemory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +53,14 @@ public class RescueDbContext : DbContext
         modelBuilder.Entity<AgentActivity>(entity =>
         {
             entity.HasKey(e => e.Id);
+        });
+
+        modelBuilder.Entity<IncidentMemory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Service);
+            entity.HasIndex(e => e.IncidentId);
+            entity.HasIndex(e => e.ResolvedAt);
         });
     }
 }

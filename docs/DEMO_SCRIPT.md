@@ -22,21 +22,22 @@
 
 ---
 
-### Minute 1:30 - 2:15: Production Breaks — "Rescue Connected the Dots"
+### Minute 1:30 - 2:15: Production Breaks — "Rescue Connected the Dots" & "Rescue Remembers"
 - **Speaker:**
-  > "10 minutes later, production PaymentService begins failing. Inbound checkout errors spike to 42% with HTTP 503 errors. Rescue wakes up automatically. It queries Moss, searches logs, deployments, and recent changes. And here is the killer capability: Rescue runs its Incident Correlation Engine and connects the live incident to the unapproved API change!"
+  > "10 minutes later, production PaymentService begins failing. Inbound checkout errors spike to 42% with HTTP 503 errors. Rescue wakes up automatically. It queries Moss for real-time context and queries its own SQLite Operational Memory. Here is the killer capability: Rescue runs its Incident Correlation Engine, connects the live incident to the unapproved API change, and surfaces: **RESCUE REMEMBERS** — identifying that an identical API compatibility incident was resolved 20 days ago (INC-001)!"
 - **Action:**
   - The screen highlights: **RESCUE CONNECTED THE DOTS**.
-  - Walk through the 5 correlation reasons.
-  - Show the interactive Multi-Event Evidence DAG from API Change → ApiClient.cs → 503 Incident → Root Cause.
+  - Walk through the interactive 17-node Multi-Event Evidence DAG from API Change → ApiClient.cs → 503 Incident → Root Cause.
+  - Point to the **🧠 RESCUE REMEMBERS** card showing 94% pattern confidence and prior resolution facts.
 
 ---
 
 ### Minute 2:15 - 3:00: Validated Fix, Human Approval, and Verification
 - **Speaker:**
-  > "Rescue shows the exact unified diff in `ApiClient.cs`—renaming `customer_id` to `customerId`. It ran 8 unit tests, and all 8 passed. It classifies the risk as LOW and includes a complete rollback plan. Now, it waits for my approval. I click 'Approve & Deploy'. Rescue creates GitHub PR #42, deploys to our staging sandbox, and verifies our live telemetry: error rate drops from 42% back down to 1.8%. Incident Resolved!"
+  > "Rescue shows the exact unified diff in `ApiClient.cs`—renaming `customer_id` to `customerId`. It ran 8 unit tests, and all 8 passed. It classifies the risk as LOW and includes a complete rollback plan. In RECOMMEND mode, a floating alert appears requiring human approval. I click 'Approve & Deploy'. Rescue creates GitHub PR #42, deploys to our staging sandbox, and verifies our live telemetry: error rate drops from 42% back down to 1.8%. And it automatically records the resolution into its operational memory. Incident Resolved!"
 - **Action:**
+  - Point to the floating in-app **🚨 RESCUE — Approval Required** banner.
   - Open the Fix Inspector modal and show the unified diff and 8/8 tests passed.
-  - Click **Approve & Create GitHub PR**.
-  - Show the staging deployment progress and verified recovery chart.
-  - Banner confirms: **✓ INCIDENT RESOLVED**.
+  - Click **Approve & Deploy**.
+  - Show the staging deployment progress and verified recovery chart (42% → 1.8%).
+  - Banner confirms: **✓ INCIDENT RESOLVED** and memory count increments.
