@@ -1,0 +1,16 @@
+{
+  "ServiceName": "PaymentService",
+  "Environment": "Production",
+  "RedisConfig": {
+    "Host": "redis-cluster.production.internal",
+    "Port": 6379,
+    "MaxPoolSize": 50,
+    "ConnectTimeoutMs": 1500,
+    "SyncTimeoutMs": 1000
+  },
+  "ExternalPaymentApi": {
+    "BaseUrl": "https://api.acmepayments.com",
+    "Version": "v4.2",
+    "TimeoutMs": 3000
+  }
+}

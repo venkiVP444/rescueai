@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rescue.Domain\Rescue.Domain.csproj" />
+    <ProjectReference Include="..\Rescue.Application\Rescue.Application.csproj" />
+    <ProjectReference Include="..\Rescue.Infrastructure\Rescue.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

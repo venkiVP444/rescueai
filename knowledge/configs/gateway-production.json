@@ -1,0 +1,7 @@
+{
+  "GatewayName": "acme-api-gateway",
+  "RateLimits": {
+    "Payments": 500,
+    "Orders": 1000
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Acme Payments External Gateway",
+    "version": "v4.1"
+  },
+  "paths": {
+    "/v1/charges": {
+      "post": {
+        "summary": "Create a charge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["customer_id", "amount", "currency"],
+                "properties": {
+                  "customer_id": { "type": "string", "description": "Legacy customer identifier" },
+                  "amount": { "type": "number" },
+                  "currency": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,724 @@
+/* ==========================================================================
+   RESCUE SRE ENTERPRISE DESIGN SYSTEM (Datadog / Incident.io / Sentry Style)
+   High-density, professional production reliability & incident console.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Slate / Charcoal Enterprise Palette */
+  --bg-canvas: #090D14;
+  --bg-surface-1: #0F1623;
+  --bg-surface-2: #151F32;
+  --bg-surface-3: #1C2B45;
+  --bg-surface-hover: #223454;
+  
+  --border-muted: #1A263D;
+  --border-default: #263859;
+  --border-focus: #3B82F6;
+
+  /* SRE Severity & Status Tokens */
+  --sev1-red: #EF4444;
+  --sev1-bg: rgba(239, 68, 68, 0.12);
+  --sev1-border: rgba(239, 68, 68, 0.35);
+
+  --sev2-amber: #F59E0B;
+  --sev2-bg: rgba(245, 158, 11, 0.12);
+  --sev2-border: rgba(245, 158, 11, 0.35);
+
+  --healthy-green: #10B981;
+  --healthy-bg: rgba(16, 185, 129, 0.12);
+  --healthy-border: rgba(16, 185, 129, 0.35);
+
+  --info-blue: #3B82F6;
+  --info-cyan: #06B6D4;
+  --cyan-bg: rgba(6, 182, 212, 0.12);
+  --cyan-border: rgba(6, 182, 212, 0.35);
+
+  /* Typography Colors */
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+  --text-code: #E5E7EB;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Base Shell */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 24px;
+}
+
+/* Top Enterprise Header */
+.ent-header {
+  background: var(--bg-surface-1);
+  border-bottom: 1px solid var(--border-muted);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.ent-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: #FFF;
+}
+
+.brand-badge-pill {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: #3B82F6;
+  color: #FFF;
+  font-weight: 900;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workspace-badge {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link-btn:hover {
+  color: #FFF;
+  background: var(--bg-surface-2);
+}
+
+.nav-link-btn.active {
+  color: #FFF;
+  background: var(--bg-surface-2);
+  font-weight: 600;
+  border: 1px solid var(--border-muted);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.latency-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-muted);
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+
+.latency-indicator strong {
+  color: var(--info-cyan);
+}
+
+.autonomy-pill-group {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.autonomy-tab {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  padding: 3px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.autonomy-tab.active {
+  background: var(--healthy-bg);
+  color: var(--healthy-green);
+  border: 1px solid var(--healthy-border);
+}
+
+.btn-trigger-action {
+  background: #2563EB;
+  color: #FFF;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.12s ease;
+}
+
+.btn-trigger-action:hover {
+  background: #1D4ED8;
+}
+
+.btn-icon-outline {
+  background: transparent;
+  border: 1px solid var(--border-muted);
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-outline:hover {
+  color: #FFF;
+  border-color: var(--border-default);
+}
+
+/* ==========================================================================
+   INCIDENT CONSOLE (Two-Column SRE Operations View)
+   ========================================================================== */
+.incident-header-bar {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.incident-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.sev-badge {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sev-badge.sev1 {
+  background: var(--sev1-bg);
+  color: var(--sev1-red);
+  border: 1px solid var(--sev1-border);
+}
+
+.sev-badge.resolved {
+  background: var(--healthy-bg);
+  color: var(--healthy-green);
+  border: 1px solid var(--healthy-border);
+}
+
+.status-chip {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.incident-title-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFF;
+  margin-bottom: 2px;
+}
+
+.incident-meta-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.incident-meta-sub strong {
+  color: var(--text-primary);
+}
+
+.two-col-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .two-col-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* SRE Panels */
+.sre-panel {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.sre-panel-header {
+  background: var(--bg-surface-2);
+  border-bottom: 1px solid var(--border-muted);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sre-panel-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sre-panel-body {
+  padding: 16px;
+}
+
+/* Structured Log Stream */
+.log-stream {
+  background: #06090F;
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.log-row {
+  display: flex;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  line-height: 1.45;
+  gap: 12px;
+}
+
+.log-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.log-ts {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.log-lvl {
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 44px;
+}
+
+.log-lvl.error { color: var(--sev1-red); }
+.log-lvl.warn { color: var(--sev2-amber); }
+.log-lvl.info { color: var(--info-blue); }
+
+.log-msg {
+  color: var(--text-code);
+  word-break: break-all;
+}
+
+/* Structured Root Cause Card */
+.rc-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rc-stat-box {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.rc-stat-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.rc-stat-val {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #FFF;
+}
+
+/* Unified Diff Component */
+.diff-viewer {
+  background: #06090F;
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  overflow-x: auto;
+}
+
+.diff-toolbar {
+  background: var(--bg-surface-2);
+  border-bottom: 1px solid var(--border-muted);
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.diff-line-row {
+  display: flex;
+  padding: 1px 12px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.diff-line-row.add {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34D399;
+}
+
+.diff-line-row.del {
+  background: rgba(239, 68, 68, 0.12);
+  color: #F87171;
+}
+
+.diff-line-row.hunk {
+  background: rgba(59, 130, 246, 0.08);
+  color: #93C5FD;
+}
+
+.diff-line-row.ctx {
+  color: #9CA3AF;
+}
+
+/* Validation Matrix Table */
+.test-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.test-matrix-table th {
+  background: var(--bg-surface-2);
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.test-matrix-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  color: var(--text-primary);
+}
+
+.test-matrix-table tr:hover td {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* Action Sidebar */
+.action-box {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.btn-approve-primary {
+  background: #10B981;
+  color: #064E3B;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.12s ease;
+}
+
+.btn-approve-primary:hover {
+  background: #34D399;
+}
+
+.btn-reject-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-reject-secondary:hover {
+  color: #FFF;
+  border-color: var(--border-default);
+}
+
+/* Operational Audit Timeline */
+.audit-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 20px;
+}
+
+.audit-timeline::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 5px;
+  width: 2px;
+  background: var(--border-muted);
+}
+
+.audit-event {
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.audit-event:last-child {
+  padding-bottom: 0;
+}
+
+.audit-dot {
+  position: absolute;
+  left: -19px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-default);
+  border: 2px solid var(--bg-surface-1);
+}
+
+.audit-dot.active {
+  background: var(--info-blue);
+}
+
+.audit-dot.success {
+  background: var(--healthy-green);
+}
+
+.audit-dot.alert {
+  background: var(--sev1-red);
+}
+
+.audit-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.audit-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.audit-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Service Catalog Table (Datadog style) */
+.services-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.services-table th {
+  background: var(--bg-surface-2);
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.services-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-muted);
+  color: var(--text-primary);
+}
+
+.services-table tr:hover td {
+  background: var(--bg-surface-hover);
+}
+
+/* Metrics Row (Prometheus / Grafana style) */
+.ent-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ent-metric-card {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-muted);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.ent-metric-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.ent-metric-val {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #FFF;
+}
+
+.ent-metric-sub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}

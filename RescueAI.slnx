@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Rescue.Api/Rescue.Api.csproj" />
+    <Project Path="src/Rescue.Application/Rescue.Application.csproj" />
+    <Project Path="src/Rescue.Domain/Rescue.Domain.csproj" />
+    <Project Path="src/Rescue.Infrastructure/Rescue.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Rescue.Tests/Rescue.Tests.csproj" />
+  </Folder>
+</Solution>

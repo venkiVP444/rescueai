@@ -1,0 +1,6 @@
+{
+  "ClusterName": "acme-redis-prod",
+  "MaxClients": 10000,
+  "TimeoutSeconds": 300,
+  "EvictionPolicy": "volatile-lru"
+}

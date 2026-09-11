@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Acme Payments External Gateway",
+    "version": "v4.2"
+  },
+  "paths": {
+    "/v1/charges": {
+      "post": {
+        "summary": "Create a charge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["customerId", "amount", "currency"],
+                "properties": {
+                  "customerId": { "type": "string", "description": "Standardized camelCase customer identifier" },
+                  "amount": { "type": "number" },
+                  "currency": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: production
+  labels:
+    app: payment-service
+    version: v41
+spec:
+  replicas: 4
+  template:
+    spec:
+      containers:
+      - name: payment-service
+        image: acme/payment-service:v1.8.1
+        env:
+        - name: REDIS_MAX_POOL_SIZE
+          value: "200"
