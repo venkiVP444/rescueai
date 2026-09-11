@@ -62,9 +62,20 @@ builder.Services.AddScoped<IEventNotificationService, SignalREventNotificationSe
 builder.Services.AddScoped<IApiChangeEngine, ApiChangeEngine>();
 builder.Services.AddScoped<IInvestigationOrchestrator, InvestigationOrchestrator>();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
 
 app.UseCors();
+
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "RESCUE API v1");
+    c.RoutePrefix = "swagger";
+});
+
 app.MapControllers();
 app.MapHub<RescueHub>("/hubs/rescue");
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Activity, RefreshCw, Play, Layers, Server, Cpu, FileText, CheckCircle, Radio } from 'lucide-react';
+import { Shield, Activity, RefreshCw, Play, Layers, Cpu, FileText, Radio, ExternalLink } from 'lucide-react';
 import { AutonomyMode, MossObservabilityStats } from '../types';
 
 interface TopNavProps {
@@ -37,7 +37,11 @@ export const TopNav: React.FC<TopNavProps> = ({
           <div className="header-brand">
             <div className="brand-badge-pill">R</div>
             <span>RESCUE</span>
-            <span className="workspace-badge">acme-prod-us-east-1</span>
+            <span className="workspace-badge" title="Active Cluster Context">acme-prod-us-east-1</span>
+            <span className={`cluster-status-pill ${isCritical ? 'critical' : 'nominal'}`}>
+              <span className="pulse-dot"></span>
+              {isCritical ? '1 Active Outage' : 'Nominal'}
+            </span>
           </div>
 
           {/* Navigation Links */}
@@ -45,61 +49,71 @@ export const TopNav: React.FC<TopNavProps> = ({
             <button
               onClick={() => onSelectTab('dots')}
               className={`nav-link-btn ${activeTab === 'dots' ? 'active' : ''}`}
+              title="Active self-healing incident response & evidence"
             >
               <Shield style={{ width: 14, height: 14 }} />
-              <span>Incident Response</span>
+              <span>Incidents</span>
               {isCritical && (
-                <span className="sev-badge sev1" style={{ fontSize: 9, padding: '1px 5px' }}>1</span>
+                <span className="sev-badge sev1" style={{ fontSize: 9, padding: '1px 6px', borderRadius: 99 }}>1</span>
               )}
-            </button>
-
-            <button
-              onClick={() => onSelectTab('dashboard')}
-              className={`nav-link-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            >
-              <Server style={{ width: 14, height: 14 }} />
-              <span>Service Catalog</span>
-            </button>
-
-            <button
-              onClick={() => onSelectTab('moss')}
-              className={`nav-link-btn ${activeTab === 'moss' ? 'active' : ''}`}
-            >
-              <Cpu style={{ width: 14, height: 14 }} />
-              <span>Moss Observability</span>
-            </button>
-
-            <button
-              onClick={() => onSelectTab('explorer')}
-              className={`nav-link-btn ${activeTab === 'explorer' ? 'active' : ''}`}
-            >
-              <Layers style={{ width: 14, height: 14 }} />
-              <span>Topology &amp; Mesh</span>
-            </button>
-
-            <button
-              onClick={() => onSelectTab('submission')}
-              className={`nav-link-btn ${activeTab === 'submission' ? 'active' : ''}`}
-            >
-              <FileText style={{ width: 14, height: 14 }} />
-              <span>Architecture &amp; PRD</span>
             </button>
 
             <button
               onClick={() => onSelectTab('integrations')}
               className={`nav-link-btn ${activeTab === 'integrations' ? 'active' : ''}`}
+              title="Connect customer microservices, API keys, and SDK"
             >
               <Radio style={{ width: 14, height: 14 }} />
               <span>Projects &amp; Integrations</span>
             </button>
+
+            <button
+              onClick={() => onSelectTab('moss')}
+              className={`nav-link-btn ${activeTab === 'moss' ? 'active' : ''}`}
+              title="Moss architectural memory & high-resolution telemetry"
+            >
+              <Cpu style={{ width: 14, height: 14 }} />
+              <span>Moss &amp; Memory</span>
+            </button>
+
+            <button
+              onClick={() => onSelectTab('explorer')}
+              className={`nav-link-btn ${activeTab === 'explorer' ? 'active' : ''}`}
+              title="Cluster topology & service mesh map"
+            >
+              <Layers style={{ width: 14, height: 14 }} />
+              <span>Topology</span>
+            </button>
+
+            <button
+              onClick={() => onSelectTab('submission')}
+              className={`nav-link-btn ${activeTab === 'submission' ? 'active' : ''}`}
+              title="Architecture specifications & audit report"
+            >
+              <FileText style={{ width: 14, height: 14 }} />
+              <span>Architecture</span>
+            </button>
+
+            {/* Direct Swagger API Link */}
+            <a
+              href="http://localhost:5105/swagger/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-link-btn swagger-link-btn"
+              title="Open live interactive Swagger REST API documentation"
+            >
+              <ExternalLink style={{ width: 13, height: 13, color: '#38BDF8' }} />
+              <span>Swagger API</span>
+              <span className="live-api-tag">v1</span>
+            </a>
           </nav>
         </div>
 
         {/* Right Controls */}
         <div className="header-right">
           {/* Autonomy Selector */}
-          <div className="autonomy-pill-group">
-            <span style={{ fontSize: 10, color: 'var(--text-tertiary)', padding: '0 6px', fontWeight: 600 }}>AUTONOMY:</span>
+          <div className="autonomy-pill-group" title="Autonomy Guardrail: Choose between Alert Only, Recommend (Human Approval), or Full Auto-Healing">
+            <span style={{ fontSize: 10, color: 'var(--text-tertiary)', padding: '0 6px', fontWeight: 600 }}>MODE:</span>
             {(['Observe', 'Recommend', 'Autonomous'] as AutonomyMode[]).map((mode) => (
               <button
                 key={mode}
@@ -114,19 +128,19 @@ export const TopNav: React.FC<TopNavProps> = ({
           {/* Real Hardware Latency */}
           <div className="latency-indicator" title="Hardware-timed Moss semantic search">
             <Activity style={{ width: 13, height: 13, color: 'var(--info-cyan)' }} />
-            <span>Moss P50:</span>
+            <span>Moss:</span>
             <strong>{mossStats && mossStats.totalQueries > 0 ? `${mossStats.p50Ms} ms` : 'Ready'}</strong>
           </div>
 
-          {/* SRE Simulation Trigger */}
+          {/* Demo Trigger Button */}
           <button
             onClick={onRunKillerDemo}
             disabled={loading}
             className="btn-trigger-action"
-            title="Inject external API change drift & correlate production 503 incident"
+            title="Simulate upstream breaking change and trigger automated incident investigation"
           >
-            <Play style={{ width: 13, height: 13 }} />
-            <span>{loading ? 'Correlating Incident...' : 'Play Killer Demo (P0)'}</span>
+            <Play style={{ width: 13, height: 13, fill: 'currentColor' }} />
+            <span>{loading ? 'Investigating...' : '⚡ Run Demo (P0)'}</span>
           </button>
 
           {/* Reset Environment */}
@@ -134,7 +148,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             onClick={onReset}
             disabled={loading}
             className="btn-icon-outline"
-            title="Reset to clean baseline telemetry"
+            title="Reset demo state and operational memories"
           >
             <RefreshCw style={{ width: 13, height: 13 }} />
           </button>

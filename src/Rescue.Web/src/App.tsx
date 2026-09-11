@@ -239,6 +239,7 @@ export const App: React.FC = () => {
             mossStats={mossStats}
             onOpenFixModal={() => setIsFixModalOpen(true)}
             onApproveAndDeploy={handleApproveAndDeploy}
+            onReject={handleReject}
           />
         )}
 
@@ -271,37 +272,6 @@ export const App: React.FC = () => {
           <IntegrationsHubView />
         )}
       </main>
-
-      {/* Floating In-App Approval Notification Banner */}
-      {isAwaitingApproval && incident && (
-        <div className="approval-alert-banner">
-          <div className="approval-alert-title">
-            <AlertTriangle style={{ width: 18, height: 18, color: 'var(--sev1-red)' }} />
-            <span>🚨 RESCUE — Approval Required</span>
-          </div>
-          <div className="approval-alert-desc">
-            <strong>{incident.service}</strong> is failing with <strong>{incident.errorRateBefore}% HTTP 503</strong> errors.
-            Rescue correlated the incident with upstream <strong>API v4.2</strong>.
-          </div>
-          <div className="approval-alert-specs">
-            <span><strong>Root Cause:</strong> customer_id → customerId</span>
-            <span><strong>Validation:</strong> {incident.validationReport?.passedTests ?? 8}/8 tests passed</span>
-            <span><strong>Risk:</strong> LOW</span>
-          </div>
-          <div className="approval-alert-actions">
-            <button onClick={() => setIsFixModalOpen(true)} className="btn-alert-review">
-              Review
-            </button>
-            <button onClick={handleApproveAndDeploy} className="btn-alert-approve">
-              <CheckCircle style={{ width: 14, height: 14 }} />
-              Approve &amp; Deploy
-            </button>
-            <button onClick={handleReject} className="btn-alert-reject">
-              Reject
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Fix & Approval Modal */}
       <FixModal

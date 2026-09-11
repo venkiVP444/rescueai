@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   Layers,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import { Project, RescueEvent } from '../types';
 
@@ -193,10 +194,23 @@ export const IntegrationsHubView: React.FC = () => {
           </div>
         </div>
 
-        <button onClick={() => setShowCreateModal(true)} className="btn-trigger-action">
-          <FolderPlus style={{ width: 14, height: 14 }} />
-          <span>Register New Customer Project</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <a
+            href="http://localhost:5105/swagger/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary-action"
+            style={{ textDecoration: 'none', color: '#38BDF8', borderColor: 'rgba(56, 189, 248, 0.4)' }}
+            title="Open Swagger REST API interactive explorer"
+          >
+            <ExternalLink style={{ width: 14, height: 14 }} />
+            <span>Swagger API Docs</span>
+          </a>
+          <button onClick={() => setShowCreateModal(true)} className="btn-trigger-action">
+            <FolderPlus style={{ width: 14, height: 14 }} />
+            <span>Register New Project</span>
+          </button>
+        </div>
       </div>
 
       {/* Raw API Key One-Time Warning Banner */}

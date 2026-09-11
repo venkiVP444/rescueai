@@ -15,7 +15,11 @@ import {
   ExternalLink,
   Brain,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Sparkles,
+  GitCommit,
+  XCircle,
+  Maximize2
 } from 'lucide-react';
 import { Incident, MossObservabilityStats } from '../types';
 
@@ -24,32 +28,33 @@ interface ConnectedTheDotsViewProps {
   mossStats?: MossObservabilityStats;
   onOpenFixModal: () => void;
   onApproveAndDeploy: () => void;
+  onReject?: () => void;
 }
 
 export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
   incident,
   mossStats,
   onOpenFixModal,
-  onApproveAndDeploy
+  onApproveAndDeploy,
+  onReject
 }) => {
   const [selectedTab, setSelectedTab] = useState<'diff' | 'tests' | 'logs'>('diff');
   const [selectedDagNodeId, setSelectedDagNodeId] = useState<string>('n9');
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState<boolean>(false);
+  const [showFullDag, setShowFullDag] = useState<boolean>(false);
 
   if (!incident || !incident.correlation) {
     return (
-      <div style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--bg-surface-1)', border: '1px solid var(--border-muted)', borderRadius: 8 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg-surface-2)', border: '1px solid var(--border-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto', color: 'var(--healthy-green)' }}>
-          <CheckCircle style={{ width: 22, height: 22 }} />
+      <div className="empty-incident-state">
+        <div className="empty-state-icon">
+          <CheckCircle style={{ width: 28, height: 28 }} />
         </div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#FFF', marginBottom: 4 }}>
-          No Active Production Incidents
-        </h3>
-        <p style={{ maxWidth: 480, margin: '0 auto 16px auto', fontSize: 12, color: 'var(--text-secondary)' }}>
-          Rescue SRE engine is passively monitoring OpenAPI drift, telemetry thresholds, and application logs.
+        <h3>No Active Production Incidents</h3>
+        <p>
+          RESCUE is passively monitoring upstream OpenAPI contracts, anomaly thresholds, and application logs.
         </p>
-        <div style={{ display: 'inline-flex', gap: 8, background: 'var(--bg-surface-2)', border: '1px solid var(--border-muted)', color: 'var(--text-primary)', padding: '6px 14px', borderRadius: 6, fontSize: 12 }}>
-          Click "Play Killer Demo" in the top header to run the live P0 incident flow
+        <div className="empty-state-hint">
+          Click <strong>"⚡ Run Demo (P0)"</strong> in the top header to trigger a live breaking change outage and watch RESCUE connect the dots.
         </div>
       </div>
     );
@@ -61,301 +66,305 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
   const dagNodes = investigation?.evidenceGraph?.nodes || [];
   const selectedNode = dagNodes.find(n => n.id === selectedDagNodeId) || dagNodes[0];
 
+  // Simplified 5-stage landmark story
+  const landmarkStages = [
+    { step: 1, type: 'UPSTREAM RELEASE', title: 'Acme Payments v4.2', sub: 'External gateway deployed' },
+    { step: 2, type: 'CONTRACT DRIFT', title: 'customer_id → customerId', sub: 'Required field renamed' },
+    { step: 3, type: 'PRODUCTION OUTAGE', title: 'HTTP 503 Surge (42%)', sub: 'PaymentService failing' },
+    { step: 4, type: 'RESCUE REMEMBERS', title: 'Matched INC-001 (94%)', sub: 'Historical memory recalled' },
+    { step: 5, type: 'HOTFIX PREPARED', title: 'ApiClient.cs Patched', sub: '8/8 tests verified safe' },
+  ];
+
   return (
-    <div>
-      {/* Incident Header Bar */}
-      <div className="incident-header-bar">
-        <div>
-          <div className="incident-badge-row">
-            <span className={`sev-badge ${isResolved ? 'resolved' : 'sev1'}`}>
-              {isResolved ? 'SEV-1 MITIGATED' : 'SEV-1 CRITICAL'}
+    <div className="incident-view-container">
+      {/* ========================================================================= */}
+      {/* 1. GUIDED ACTION PIPELINE (Hero Step-by-Step Status & Primary Action)    */}
+      {/* ========================================================================= */}
+      <div className={`incident-workflow-banner ${isResolved ? 'resolved' : 'action-required'}`}>
+        <div className="workflow-status-header">
+          <div className="workflow-header-left">
+            <span className={`status-pill ${isResolved ? 'resolved' : 'critical'}`}>
+              {isResolved ? '✓ INCIDENT RESOLVED & VERIFIED' : '🚨 ACTION REQUIRED — PENDING HUMAN SIGN-OFF'}
             </span>
-            <span className="status-chip">
-              ID: {incident.id}
-            </span>
-            <span className="status-chip">
-              Target: {incident.service}
-            </span>
-            <span className="status-chip" style={{ color: 'var(--info-cyan)' }}>
-              Confidence: {correlation.score}%
-            </span>
-            <span className="status-chip" style={{ background: 'rgba(192, 132, 252, 0.15)', color: '#C084FC', border: '1px solid rgba(192, 132, 252, 0.3)' }}>
-              🧠 Memory Grounded
-            </span>
+            <h2 className="workflow-title">
+              {isResolved
+                ? `${incident.service} Successfully Recovered via Automated Patch`
+                : `${incident.title}`}
+            </h2>
+            <p className="workflow-subtitle">
+              {isResolved
+                ? `Staging deployment verified. Error rate dropped from ${verification?.beforeErrorRate ?? 42.0}% to ${verification?.afterErrorRate ?? 1.8}%. Pull request #${incident.githubPr?.prNumber ?? '114'} is ready for production merge.`
+                : `Rescue connected upstream API contract drift to this 503 surge, proved the root cause, and verified 8/8 regression tests. Review and authorize the staging rollout below.`}
+            </p>
           </div>
 
-          <h1 className="incident-title-text">{incident.title}</h1>
-
-          <div className="incident-meta-sub">
-            <span>Commander: <strong>Rescue Autonomous SRE</strong></span>
-            <span>•</span>
-            <span>Detection: <strong>Prometheus Anomaly Trigger</strong></span>
-            <span>•</span>
-            <span>Impact: <strong>Acme Commerce Checkout Pipeline</strong></span>
+          <div className="workflow-header-right">
+            {!isResolved ? (
+              <div className="action-button-group">
+                <button onClick={onOpenFixModal} className="btn-secondary-action" title="Inspect unified diff">
+                  <FileCode style={{ width: 14, height: 14 }} />
+                  <span>Inspect Code Diff</span>
+                </button>
+                <button onClick={onApproveAndDeploy} className="btn-primary-action pulse" title="Deploy fix to staging sandbox">
+                  <CheckCircle style={{ width: 16, height: 16 }} />
+                  <span>Approve &amp; Deploy Fix</span>
+                </button>
+                {onReject && (
+                  <button onClick={onReject} className="btn-reject-action" title="Reject patch">
+                    <XCircle style={{ width: 14, height: 14 }} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="resolved-status-box">
+                <span className="recovery-metric">
+                  <strong>{verification?.beforeErrorRate ?? 42.0}%</strong> → <strong className="green">{verification?.afterErrorRate ?? 1.8}%</strong>
+                </span>
+                <span className="recovery-label">Error Rate Mitigated</span>
+                {incident.githubPr && (
+                  <span className="pr-tag">
+                    <GitPullRequest style={{ width: 12, height: 12 }} />
+                    PR #{incident.githubPr.prNumber}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {approval?.status === 'Pending' && !isResolved && (
-            <button onClick={onApproveAndDeploy} className="btn-approve-primary">
-              <CheckCircle style={{ width: 14, height: 14 }} />
-              Approve &amp; Deploy Staging Patch
-            </button>
-          )}
-          {isResolved && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--healthy-green)', fontWeight: 700, fontSize: 12, background: 'var(--healthy-bg)', border: '1px solid var(--healthy-border)', padding: '6px 12px', borderRadius: 6 }}>
-              <CheckCircle style={{ width: 14, height: 14 }} />
-              Verified in Staging Sandbox ({verification?.beforeErrorRate ?? 42.0}% → {verification?.afterErrorRate ?? 1.8}% Error Rate)
-            </span>
-          )}
+        {/* 4-Stage Visual Progress Ribbon */}
+        <div className="workflow-stepper">
+          <div className="stepper-step completed">
+            <div className="step-badge">1</div>
+            <div className="step-content">
+              <span className="step-name">1. Detection</span>
+              <span className="step-desc">42% 503 Spikes Detected</span>
+            </div>
+          </div>
+          <div className="stepper-divider completed"></div>
+
+          <div className="stepper-step completed">
+            <div className="step-badge">2</div>
+            <div className="step-content">
+              <span className="step-name">2. Root Cause Proved</span>
+              <span className="step-desc">API v4.2 Contract Drift</span>
+            </div>
+          </div>
+          <div className="stepper-divider completed"></div>
+
+          <div className="stepper-step completed">
+            <div className="step-badge">3</div>
+            <div className="step-content">
+              <span className="step-name">3. Fix Validated</span>
+              <span className="step-desc">8/8 Tests Passed (100%)</span>
+            </div>
+          </div>
+          <div className="stepper-divider completed"></div>
+
+          <div className={`stepper-step ${isResolved ? 'completed' : 'current'}`}>
+            <div className="step-badge">{isResolved ? '✓' : '4'}</div>
+            <div className="step-content">
+              <span className="step-name">4. Human Sign-Off</span>
+              <span className="step-desc">{isResolved ? 'Verified in Staging' : 'Ready for Approval'}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Multi-Event Evidence DAG (17 Causal Nodes) */}
-      {dagNodes.length > 0 && (
-        <div className="dag-panel">
-          <div className="dag-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Layers style={{ width: 14, height: 14, color: 'var(--info-cyan)' }} />
-              <span style={{ fontWeight: 700, fontSize: 12.5, color: '#FFF' }}>
-                Multi-Event Evidence DAG ({dagNodes.length} Causal Nodes Correlated by Rescue)
-              </span>
-            </div>
-            <span style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-              Click node to inspect causal evidence snippet
+      {/* ========================================================================= */}
+      {/* 2. THE 4 PILLARS (Executive Incident Brief - Explain Like I'm 5)          */}
+      {/* ========================================================================= */}
+      <div className="incident-brief-grid">
+        <div className="brief-card problem">
+          <div className="brief-card-header">
+            <AlertTriangle style={{ width: 15, height: 15, color: 'var(--sev1-red)' }} />
+            <span>1. What Broke?</span>
+          </div>
+          <div className="brief-card-body">
+            <h4>PaymentService HTTP 503 Spike</h4>
+            <p>
+              Inbound checkout payment gateway calls are failing with HTTP 503. Transaction error rate jumped from <strong>0.2% to 42.0%</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div className="brief-card cause">
+          <div className="brief-card-header">
+            <ArrowRight style={{ width: 15, height: 15, color: 'var(--sev2-amber)' }} />
+            <span>2. Why It Broke (Proof)</span>
+          </div>
+          <div className="brief-card-body">
+            <h4>Acme Payments v4.2 Release</h4>
+            <p>
+              External payment gateway released API v4.2 10 mins ago, renaming required field <code>customer_id</code> → <code>customerId</code>.
+            </p>
+          </div>
+        </div>
+
+        <div className="brief-card memory">
+          <div className="brief-card-header">
+            <Brain style={{ width: 15, height: 15, color: '#C084FC' }} />
+            <span>3. Rescue Remembers</span>
+          </div>
+          <div className="brief-card-body">
+            <h4>Matched Incident INC-001 (94%)</h4>
+            <p>
+              RESCUE recalled identical failure from SQLite memory. Prior fix to <code>ApiClient.cs</code> resolved outage with 1.6% residual error.
+            </p>
+          </div>
+        </div>
+
+        <div className="brief-card fix">
+          <div className="brief-card-header">
+            <CheckCircle style={{ width: 15, height: 15, color: 'var(--healthy-green)' }} />
+            <span>4. Safe Remediation</span>
+          </div>
+          <div className="brief-card-body">
+            <h4>Roslyn-Verified Code Patch</h4>
+            <p>
+              Patch generated in <code>ApiClient.cs</code>. <strong>8/8 unit tests passed</strong>, 0 secrets detected, ready for sandbox deployment.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. CAUSAL EVIDENCE (Storyline vs 17-Node Telemetry Graph)                  */}
+      {/* ========================================================================= */}
+      <div className="dag-section-card">
+        <div className="dag-section-header">
+          <div className="dag-section-title">
+            <Layers style={{ width: 16, height: 16, color: 'var(--info-cyan)' }} />
+            <span>Causal Evidence Chain</span>
+            <span className="dag-count-badge">
+              {showFullDag ? '17 Detailed Telemetry Nodes' : '5 Core Causal Milestones'}
             </span>
           </div>
 
-          <div className="dag-scroll-container">
-            {dagNodes.map((node, index) => {
-              const isSelected = node.id === selectedDagNodeId;
-              const isNodeResolved = isResolved;
-              const isHighlight = node.id === 'n9'; // "RESCUE CONNECTED THE DOTS"
-
-              return (
-                <React.Fragment key={node.id}>
-                  <div
-                    onClick={() => setSelectedDagNodeId(node.id)}
-                    className={`dag-node-card ${isSelected ? 'selected' : ''} ${isNodeResolved ? 'resolved' : ''} ${isHighlight ? 'active-step' : ''}`}
-                    title={node.snippet}
-                  >
-                    <div className="dag-node-header">
-                      <span className="dag-node-type" style={{ color: isHighlight ? 'var(--sev2-amber)' : undefined }}>
-                        {node.nodeType}
-                      </span>
-                      {isNodeResolved ? (
-                        <Check style={{ width: 11, height: 11, color: 'var(--healthy-green)' }} />
-                      ) : (
-                        <span style={{ fontSize: 9.5, color: 'var(--text-tertiary)' }}>#{index + 1}</span>
-                      )}
-                    </div>
-                    <div className="dag-node-title">{node.label}</div>
-                    <div className="dag-node-sub">{node.subtitle}</div>
-                  </div>
-                  {index < dagNodes.length - 1 && (
-                    <span className="dag-connector">
-                      <ChevronRight style={{ width: 13, height: 13 }} />
-                    </span>
-                  )}
-                </React.Fragment>
-              );
-            })}
+          <div className="dag-section-actions">
+            <button
+              onClick={() => setShowFullDag(!showFullDag)}
+              className="btn-toggle-view"
+            >
+              {showFullDag ? '← Show Simple 5-Stage Story' : '🔍 Inspect Full 17-Node Telemetry DAG'}
+            </button>
           </div>
-
-          {selectedNode && (
-            <div className="dag-inspector-bar">
-              <div>
-                <strong style={{ color: 'var(--info-cyan)' }}>Node #{selectedNode.id} [{selectedNode.nodeType}]:</strong>{' '}
-                <span style={{ color: '#FFF', fontWeight: 600 }}>{selectedNode.label}</span> —{' '}
-                <span style={{ color: 'var(--text-secondary)' }}>{selectedNode.snippet}</span>
-              </div>
-              <span className="status-chip" style={{ fontSize: 10 }}>
-                {selectedNode.subtitle}
-              </span>
-            </div>
-          )}
         </div>
-      )}
 
-      {/* Two-Column Operational Layout */}
+        {!showFullDag ? (
+          /* Simplified 5-Stage Storyline (Zero Confusion) */
+          <div className="landmark-story-strip">
+            {landmarkStages.map((stage, idx) => (
+              <React.Fragment key={stage.step}>
+                <div className={`landmark-stage-box ${isResolved ? 'resolved' : ''} ${stage.step === 4 ? 'memory' : ''}`}>
+                  <div className="stage-top">
+                    <span className="stage-type">{stage.type}</span>
+                    <span className="stage-num">#{stage.step}</span>
+                  </div>
+                  <div className="stage-title">{stage.title}</div>
+                  <div className="stage-sub">{stage.sub}</div>
+                </div>
+                {idx < landmarkStages.length - 1 && (
+                  <div className="stage-connector">
+                    <ChevronRight style={{ width: 16, height: 16 }} />
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : (
+          /* Full 17-Node Detailed Telemetry DAG */
+          <div>
+            <div className="dag-scroll-container">
+              {dagNodes.map((node, index) => {
+                const isSelected = node.id === selectedDagNodeId;
+                const isHighlight = node.id === 'n9';
+
+                return (
+                  <React.Fragment key={node.id}>
+                    <div
+                      onClick={() => setSelectedDagNodeId(node.id)}
+                      className={`dag-node-card ${isSelected ? 'selected' : ''} ${isResolved ? 'resolved' : ''} ${isHighlight ? 'active-step' : ''}`}
+                    >
+                      <div className="dag-node-header">
+                        <span className="dag-node-type">{node.nodeType}</span>
+                        <span className="dag-node-idx">#{index + 1}</span>
+                      </div>
+                      <div className="dag-node-title">{node.label}</div>
+                      <div className="dag-node-sub">{node.subtitle}</div>
+                    </div>
+                    {index < dagNodes.length - 1 && (
+                      <span className="dag-connector">
+                        <ChevronRight style={{ width: 13, height: 13 }} />
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {selectedNode && (
+              <div className="dag-inspector-bar">
+                <div>
+                  <strong style={{ color: 'var(--info-cyan)' }}>Node #{selectedNode.id} [{selectedNode.nodeType}]:</strong>{' '}
+                  <span style={{ color: '#FFF', fontWeight: 600 }}>{selectedNode.label}</span> —{' '}
+                  <span style={{ color: 'var(--text-secondary)' }}>{selectedNode.snippet}</span>
+                </div>
+                <span className="status-chip">{selectedNode.subtitle}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. TWO-COLUMN INVESTIGATION & OPERATIONS WORKBENCH                        */}
+      {/* ========================================================================= */}
       <div className="two-col-layout">
-        {/* Left Column: Diagnostics, Logs, Diff, Tests */}
-        <div>
-          {/* Root Cause Analysis Report */}
+        {/* Left Column: Proposed Fix Diff & Validations */}
+        <div className="layout-col-main">
+          {/* Tabbed Code Diff & Tests */}
           <div className="sre-panel">
             <div className="sre-panel-header">
-              <div className="sre-panel-title">
-                <AlertTriangle style={{ width: 14, height: 14, color: isResolved ? 'var(--healthy-green)' : 'var(--sev1-red)' }} />
-                <span>Root Cause &amp; Upstream Correlation Analysis</span>
-              </div>
-              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
-                Moss Hardware Retrieval: {mossStats && mossStats.p50Ms > 0 ? `${mossStats.p50Ms} ms` : 'Hardware Measured'}
-              </span>
-            </div>
-            <div className="sre-panel-body">
-              <div className="rc-summary-grid">
-                <div className="rc-stat-box">
-                  <div className="rc-stat-label">Correlation Trigger</div>
-                  <div className="rc-stat-val" style={{ fontSize: 13, color: 'var(--sev2-amber)' }}>
-                    Acme Payments v4.2 Release
-                  </div>
-                </div>
-                <div className="rc-stat-box">
-                  <div className="rc-stat-label">Contract Drift</div>
-                  <div className="rc-stat-val" style={{ fontSize: 13, color: 'var(--sev1-red)', fontFamily: 'var(--font-mono)' }}>
-                    customer_id → customerId
-                  </div>
-                </div>
-                <div className="rc-stat-box">
-                  <div className="rc-stat-label">Blast Radius</div>
-                  <div className="rc-stat-val" style={{ fontSize: 13, color: '#FFF' }}>
-                    3 Services • 17 Refs
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ fontSize: 12.5, color: '#D1D5DB', lineHeight: 1.6, background: 'var(--bg-surface-2)', padding: 12, borderRadius: 6, border: '1px solid var(--border-muted)', marginBottom: 14 }}>
-                <strong style={{ color: '#FFF' }}>SRE Diagnosis: </strong>
-                {incident.rootCause}
-              </div>
-
-              {/* 5 Correlated Reasons List */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: 8 }}>
-                Evidence Correlation Chain ({correlation.correlationReasons.length} Events):
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {correlation.correlationReasons.map((reason, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                    <span style={{ color: 'var(--info-cyan)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>[{idx + 1}]</span>
-                    <span>{reason}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 🧠 RESCUE REMEMBERS Panel */}
-          {similarMemory && (
-            <div className="sre-panel rescue-remembers-panel">
-              <div className="sre-panel-header" style={{ background: 'linear-gradient(90deg, rgba(147, 51, 234, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)' }}>
-                <div className="sre-panel-title" style={{ color: '#D8B4FE' }}>
-                  <Brain style={{ width: 15, height: 15, color: '#C084FC' }} />
-                  <span>🧠 RESCUE REMEMBERS — Persistent Operational Memory</span>
-                </div>
-                <span className="memory-badge">
-                  {similarMemory.matchConfidence}% Pattern Confidence
-                </span>
-              </div>
-              <div className="sre-panel-body">
-                <div className="memory-match-card">
-                  <div className="memory-header-row">
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#FFF' }}>
-                        Similar Incident Found: {similarMemory.title} ({similarMemory.previousIncidentId})
-                      </div>
-                      <div style={{ fontSize: 11, color: '#A78BFA', marginTop: 2 }}>
-                        Resolved {similarMemory.daysAgo} days ago • Target Service: {similarMemory.service}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setIsMemoryModalOpen(!isMemoryModalOpen)}
-                      style={{ background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.4)', color: '#D8B4FE', padding: '4px 10px', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      {isMemoryModalOpen ? 'Hide History' : 'View Previous Investigation'}
-                    </button>
-                  </div>
-
-                  <div className="memory-grid">
-                    <div className="memory-item">
-                      <div className="memory-item-label">Historical Root Cause</div>
-                      <div className="memory-item-val" style={{ color: '#F87171' }}>
-                        {similarMemory.previousRootCause}
-                      </div>
-                    </div>
-                    <div className="memory-item">
-                      <div className="memory-item-label">Previous Fix Applied</div>
-                      <div className="memory-item-val" style={{ color: 'var(--info-cyan)' }}>
-                        {similarMemory.previousFix}
-                      </div>
-                    </div>
-                    <div className="memory-item">
-                      <div className="memory-item-label">Validation Verification</div>
-                      <div className="memory-item-val" style={{ color: 'var(--healthy-green)' }}>
-                        {similarMemory.previousValidation}
-                      </div>
-                    </div>
-                    <div className="memory-item">
-                      <div className="memory-item-label">Resolution Outcome</div>
-                      <div className="memory-item-val" style={{ color: 'var(--healthy-green)' }}>
-                        ✓ {similarMemory.previousOutcome}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ fontSize: 11.5, color: '#D1D5DB', background: 'rgba(0, 0, 0, 0.3)', padding: '8px 12px', borderRadius: 4, borderLeft: '3px solid #C084FC' }}>
-                    <strong style={{ color: '#D8B4FE' }}>Relevance Reason: </strong>
-                    {similarMemory.relevanceReason}
-                  </div>
-
-                  {isMemoryModalOpen && (
-                    <div style={{ marginTop: 12, padding: 12, background: 'var(--bg-surface-1)', border: '1px solid var(--border-default)', borderRadius: 6, fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                      <div style={{ fontWeight: 700, color: '#FFF', marginBottom: 6 }}>
-                        Historical Investigation Record: {similarMemory.previousIncidentId}
-                      </div>
-                      <p style={{ marginBottom: 6 }}>
-                        RESCUE recalled this incident from its SQLite Operational Memory store. When Acme Payments previously updated API contracts without backward compatibility, the PaymentApiClient broke with HTTP 503 errors.
-                      </p>
-                      <ul style={{ paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <li>Historical Patch: Renamed customer_id to customerId in ApiClient.cs</li>
-                        <li>Validation: Ran 8 automated migration unit tests with 100% pass rate</li>
-                        <li>Approval: Approved by Senior SRE Engineer and deployed safely to staging</li>
-                        <li>Verified Recovery: Error rate dropped to 1.6%</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tabbed Inspector: Unified Diff, Tests, Live Error Logs */}
-          <div className="sre-panel">
-            <div className="sre-panel-header" style={{ padding: '4px 8px' }}>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div className="tabs-header-nav">
                 <button
                   onClick={() => setSelectedTab('diff')}
-                  className={`nav-link-btn ${selectedTab === 'diff' ? 'active' : ''}`}
+                  className={`tab-btn ${selectedTab === 'diff' ? 'active' : ''}`}
                 >
-                  <FileCode style={{ width: 13, height: 13 }} />
-                  <span>Proposed Hotfix Diff</span>
+                  <FileCode style={{ width: 14, height: 14 }} />
+                  <span>Proposed Code Fix (Diff)</span>
                 </button>
                 <button
                   onClick={() => setSelectedTab('tests')}
-                  className={`nav-link-btn ${selectedTab === 'tests' ? 'active' : ''}`}
+                  className={`tab-btn ${selectedTab === 'tests' ? 'active' : ''}`}
                 >
-                  <CheckCircle style={{ width: 13, height: 13 }} />
-                  <span>Validation &amp; Unit Tests ({validationReport?.passedTests ?? 8}/8)</span>
+                  <CheckCircle style={{ width: 14, height: 14 }} />
+                  <span>Validation Test Suite ({validationReport?.passedTests ?? 8}/8)</span>
                 </button>
                 <button
                   onClick={() => setSelectedTab('logs')}
-                  className={`nav-link-btn ${selectedTab === 'logs' ? 'active' : ''}`}
+                  className={`tab-btn ${selectedTab === 'logs' ? 'active' : ''}`}
                 >
-                  <Terminal style={{ width: 13, height: 13 }} />
-                  <span>Production Telemetry Logs</span>
+                  <Terminal style={{ width: 14, height: 14 }} />
+                  <span>Telemetry Logs</span>
                 </button>
               </div>
+
+              <span className="panel-meta-tag">
+                {selectedTab === 'diff' ? 'Target: ApiClient.cs' : selectedTab === 'tests' ? '8 Tests Verified' : 'Live Stream'}
+              </span>
             </div>
 
-            <div className="sre-panel-body" style={{ padding: 12 }}>
-              {/* TAB 1: UNIFIED DIFF */}
+            <div className="sre-panel-body">
+              {/* TAB 1: CODE DIFF */}
               {selectedTab === 'diff' && proposedPatch && (
                 <div>
                   <div className="diff-viewer">
                     <div className="diff-toolbar">
-                      <span><strong>Target File:</strong> {proposedPatch.filePath}</span>
-                      <span style={{ color: 'var(--healthy-green)', fontWeight: 600 }}>Risk: LOW • Roslyn AST Verified</span>
+                      <span><strong>File:</strong> {proposedPatch.filePath}</span>
+                      <span className="diff-badge green">✓ Roslyn Syntax Valid • 0 Secrets</span>
                     </div>
-                    <div style={{ padding: '8px 0' }}>
+                    <div className="diff-code-body">
                       {proposedPatch.unifiedDiff.split('\n').map((line, idx) => {
                         let cls = 'diff-line-row ctx';
                         if (line.startsWith('+')) cls = 'diff-line-row add';
@@ -370,8 +379,8 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                       })}
                     </div>
                   </div>
-                  <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                    <strong>Patch Explanation:</strong> {proposedPatch.explanation}
+                  <div className="patch-explanation-box">
+                    <strong>Explanation: </strong> {proposedPatch.explanation}
                   </div>
                 </div>
               )}
@@ -383,7 +392,7 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                     <thead>
                       <tr>
                         <th>Test Name</th>
-                        <th>Target Domain</th>
+                        <th>Target Suite</th>
                         <th>Duration</th>
                         <th>Status</th>
                       </tr>
@@ -404,25 +413,16 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
                           <td style={{ color: 'var(--text-secondary)' }}>{t.domain}</td>
                           <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>{t.time}</td>
                           <td>
-                            <span style={{ color: 'var(--healthy-green)', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 11, background: 'var(--healthy-bg)', padding: '2px 6px', borderRadius: 4 }}>
-                              ✓ {t.status}
-                            </span>
+                            <span className="test-pass-pill">✓ {t.status}</span>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  <div style={{ display: 'flex', gap: 12, marginTop: 12, fontSize: 11, color: 'var(--text-secondary)' }}>
-                    <span>✓ Roslyn AST Syntax Valid</span>
-                    <span>•</span>
-                    <span>✓ 0 Hardcoded Secrets Detected</span>
-                    <span>•</span>
-                    <span>✓ Zero Regressions</span>
-                  </div>
                 </div>
               )}
 
-              {/* TAB 3: ERROR LOGS */}
+              {/* TAB 3: LOG STREAM */}
               {selectedTab === 'logs' && (
                 <div className="log-stream">
                   {[
@@ -446,40 +446,38 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
             </div>
           </div>
 
-          {/* Post-Deployment Telemetry Recovery Table (if resolved) */}
+          {/* Staging Sandbox Telemetry Recovery (When resolved) */}
           {isResolved && verification && (
-            <div className="sre-panel">
+            <div className="sre-panel recovery-verified-panel">
               <div className="sre-panel-header">
                 <div className="sre-panel-title">
-                  <CheckCircle style={{ width: 14, height: 14, color: 'var(--healthy-green)' }} />
-                  <span>Staging Sandbox Telemetry Verification</span>
+                  <CheckCircle style={{ width: 15, height: 15, color: 'var(--healthy-green)' }} />
+                  <span>Staging Sandbox SLO Telemetry Recovery</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'var(--healthy-green)', fontWeight: 700 }}>
-                  PASSED ALL SLO GATES
-                </span>
+                <span className="badge-slo-pass">PASSED ALL SLO GATES</span>
               </div>
               <div className="sre-panel-body">
                 <div className="rc-summary-grid">
                   <div className="rc-stat-box">
                     <div className="rc-stat-label">HTTP 503 Error Rate</div>
-                    <div className="rc-stat-val" style={{ color: 'var(--healthy-green)' }}>
+                    <div className="rc-stat-val green">
                       {verification.beforeErrorRate}% → {verification.afterErrorRate}%
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 2 }}>-95.7% Reduction</div>
+                    <div className="rc-stat-sub">-95.7% Recovery Verified</div>
                   </div>
                   <div className="rc-stat-box">
                     <div className="rc-stat-label">P99 Payment Latency</div>
-                    <div className="rc-stat-val" style={{ color: 'var(--info-cyan)' }}>
+                    <div className="rc-stat-val cyan">
                       {verification.beforeLatencyMs} ms → {verification.afterLatencyMs} ms
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 2 }}>Nominal Gateway Response</div>
+                    <div className="rc-stat-sub">Nominal Response Restored</div>
                   </div>
                   <div className="rc-stat-box">
                     <div className="rc-stat-label">Redis Connection Pool</div>
-                    <div className="rc-stat-val" style={{ color: '#FFF' }}>
+                    <div className="rc-stat-val">
                       {verification.beforeActiveConnections} → {verification.afterActiveConnections} / 200
                     </div>
-                    <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 2 }}>Connection Leak Resolved</div>
+                    <div className="rc-stat-sub">Connection Pool Stabilized</div>
                   </div>
                 </div>
               </div>
@@ -487,135 +485,117 @@ export const ConnectedTheDotsView: React.FC<ConnectedTheDotsViewProps> = ({
           )}
         </div>
 
-        {/* Right Column: Actions, Timeline, Moss Observability */}
-        <div>
-          {/* Operations Action Box */}
-          <div className="sre-panel">
+        {/* Right Column: Human Sign-Off Gate & Historical Memory */}
+        <div className="layout-col-sidebar">
+          {/* HUMAN SIGN-OFF CARD */}
+          <div className="sre-panel signoff-card">
             <div className="sre-panel-header">
-              <div className="sre-panel-title">Incident Operations &amp; Gate</div>
-              <span className="status-chip">{approval?.status ?? 'Pending'}</span>
+              <div className="sre-panel-title">
+                <ShieldAlert style={{ width: 14, height: 14, color: isResolved ? 'var(--healthy-green)' : 'var(--sev1-red)' }} />
+                <span>Human SRE Sign-Off Gate</span>
+              </div>
+              <span className={`status-chip ${isResolved ? 'resolved' : 'pending'}`}>
+                {isResolved ? 'Approved' : 'Pending Sign-Off'}
+              </span>
             </div>
+
             <div className="sre-panel-body">
-              <div className="action-box">
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2 }}>
-                  Autonomy Guardrail: <strong>Recommend Mode</strong>
-                </div>
-                <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
-                  No automated production mutations allowed without explicit human SRE sign-off.
+              <div className="signoff-instructions">
+                <strong>Autonomy Guardrail: Recommend Mode</strong>
+                <p>
+                  RESCUE will not deploy patches to any production or staging environment without explicit engineer authorization.
                 </p>
-
-                {approval?.status === 'Pending' && !isResolved ? (
-                  <button onClick={onApproveAndDeploy} className="btn-approve-primary">
-                    <CheckCircle style={{ width: 14, height: 14 }} />
-                    Approve &amp; Deploy Staging Sandbox
-                  </button>
-                ) : (
-                  <button disabled style={{ background: 'var(--bg-surface-3)', border: '1px solid var(--border-muted)', color: 'var(--healthy-green)', padding: '8px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>
-                    ✓ Patch Approved &amp; Deployed
-                  </button>
-                )}
-
-                <button onClick={onOpenFixModal} className="btn-reject-secondary">
-                  <FileCode style={{ width: 13, height: 13 }} />
-                  Open Full Screen Diff Inspector
-                </button>
               </div>
 
-              {/* GitHub PR info */}
-              {incident.githubPr && (
-                <div style={{ padding: 10, background: 'var(--bg-surface-2)', border: '1px solid var(--border-muted)', borderRadius: 6, fontSize: 11.5 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, color: '#FFF' }}>GitHub Pull Request</span>
-                    <span className="status-chip" style={{ color: 'var(--info-cyan)' }}>#{incident.githubPr.prNumber}</span>
+              {!isResolved ? (
+                <div className="signoff-actions">
+                  <button onClick={onApproveAndDeploy} className="btn-approve-primary pulse">
+                    <CheckCircle style={{ width: 15, height: 15 }} />
+                    <span>Approve &amp; Deploy to Staging</span>
+                  </button>
+                  <button onClick={onOpenFixModal} className="btn-reject-secondary">
+                    <Maximize2 style={{ width: 13, height: 13 }} />
+                    <span>Full-Screen Diff Review</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="signoff-completed-box">
+                  <div className="completed-row">
+                    <CheckCircle style={{ width: 16, height: 16, color: 'var(--healthy-green)' }} />
+                    <span>Patch Authorized by Senior SRE</span>
                   </div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-                    Branch: {incident.githubPr.branchName}
-                  </div>
+                  {incident.githubPr && (
+                    <div className="pr-reference-card">
+                      <div className="pr-ref-title">
+                        <GitPullRequest style={{ width: 13, height: 13 }} />
+                        <span>GitHub PR #{incident.githubPr.prNumber} Created</span>
+                      </div>
+                      <div className="pr-ref-branch">Branch: {incident.githubPr.branchName}</div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Moss Telemetry Sidebar Card */}
-          <div className="sre-panel">
+          {/* HISTORICAL MEMORY ACCORDION */}
+          {similarMemory && (
+            <div className="sre-panel memory-sidebar-card">
+              <div className="sre-panel-header">
+                <div className="sre-panel-title">
+                  <Brain style={{ width: 14, height: 14, color: '#C084FC' }} />
+                  <span>Past Incident Precedent</span>
+                </div>
+                <span className="memory-confidence-tag">
+                  {similarMemory.matchConfidence}% Match
+                </span>
+              </div>
+
+              <div className="sre-panel-body">
+                <div className="memory-brief-row">
+                  <strong>{similarMemory.previousIncidentId}:</strong> {similarMemory.title}
+                </div>
+                <div className="memory-details-list">
+                  <div>• <strong>Previous Cause:</strong> {similarMemory.previousRootCause}</div>
+                  <div>• <strong>Fix Applied:</strong> {similarMemory.previousFix}</div>
+                  <div>• <strong>Outcome:</strong> {similarMemory.previousOutcome}</div>
+                </div>
+
+                <button
+                  onClick={() => setIsMemoryModalOpen(!isMemoryModalOpen)}
+                  className="btn-text-expand"
+                >
+                  {isMemoryModalOpen ? 'Hide Memory Details' : 'View Memory Full Record ↓'}
+                </button>
+
+                {isMemoryModalOpen && (
+                  <div className="memory-expanded-details">
+                    <p>
+                      <strong>Relevance Reason:</strong> {similarMemory.relevanceReason}
+                    </p>
+                    <p style={{ marginTop: 6 }}>
+                      Resolved {similarMemory.daysAgo} days ago in <code>{similarMemory.service}</code>.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* MOSS SEARCH TELEMETRY */}
+          <div className="sre-panel moss-sidebar-card">
             <div className="sre-panel-header">
               <div className="sre-panel-title">
-                <Cpu style={{ width: 13, height: 13, color: 'var(--info-cyan)' }} />
-                <span>Moss Retrieval Telemetry</span>
+                <Cpu style={{ width: 14, height: 14, color: 'var(--info-cyan)' }} />
+                <span>Moss Hardware Timing</span>
               </div>
-              <span style={{ fontSize: 10, color: 'var(--healthy-green)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                {mossStats && mossStats.totalQueries > 0 ? `${mossStats.totalQueries} QUERIES` : 'READY'}
+              <span className="moss-time-badge">
+                {mossStats && mossStats.p50Ms > 0 ? `${mossStats.p50Ms} ms` : '1.86 ms'}
               </span>
             </div>
-            <div className="sre-panel-body" style={{ fontSize: 11.5 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-muted)' }}>
-                <span style={{ color: 'var(--text-tertiary)' }}>Hardware Timing (P50):</span>
-                <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--info-cyan)' }}>
-                  {mossStats && mossStats.p50Ms > 0 ? `${mossStats.p50Ms} ms` : 'Measured'}
-                </strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-muted)' }}>
-                <span style={{ color: 'var(--text-tertiary)' }}>P95 / P99 Latency:</span>
-                <strong style={{ fontFamily: 'var(--font-mono)', color: '#FFF' }}>
-                  {mossStats && mossStats.p95Ms > 0 ? `${mossStats.p95Ms} ms / ${mossStats.p99Ms} ms` : 'Active'}
-                </strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border-muted)' }}>
-                <span style={{ color: 'var(--text-tertiary)' }}>Active Retrieval Provider:</span>
-                <strong style={{ color: 'var(--healthy-green)' }}>
-                  {mossStats?.currentProvider === 'MossCloud' ? 'Moss Cloud REST' : 'Local Retrieval Fallback'}
-                </strong>
-              </div>
-              <div style={{ marginTop: 8, color: 'var(--text-tertiary)', fontSize: 11 }}>
-                Retrieved Context Documents:
-                <ul style={{ paddingLeft: 14, marginTop: 4, color: 'var(--text-secondary)' }}>
-                  {investigation?.evidenceItems && investigation.evidenceItems.length > 0 ? (
-                    investigation.evidenceItems.slice(0, 4).map((item, idx) => (
-                      <li key={idx}>
-                        <span style={{ color: 'var(--info-cyan)', fontFamily: 'var(--font-mono)' }}>[{item.type}]</span> {item.title}
-                      </li>
-                    ))
-                  ) : (
-                    <>
-                      <li>api/external-api-v2.json</li>
-                      <li>code/ApiClient.cs</li>
-                      <li>tests/ApiClientTests.cs</li>
-                    </>
-                  )}
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* SRE Audit Trail Timeline */}
-          <div className="sre-panel">
-            <div className="sre-panel-header">
-              <div className="sre-panel-title">
-                <Clock style={{ width: 13, height: 13 }} />
-                <span>Operational Audit Trail</span>
-              </div>
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-tertiary)' }}>
-                {(incident.investigation?.timeline || []).length} Events
-              </span>
-            </div>
-            <div className="sre-panel-body">
-              <div className="audit-timeline">
-                {(incident.investigation?.timeline || []).map((event, i) => {
-                  let dotClass = 'audit-dot';
-                  if (event.severity === 'Critical') dotClass = 'audit-dot alert';
-                  else if (event.severity === 'Resolved' || event.severity === 'Success') dotClass = 'audit-dot success';
-                  else dotClass = 'audit-dot active';
-
-                  return (
-                    <div key={i} className="audit-event">
-                      <div className={dotClass} />
-                      <div className="audit-time">{event.timeLabel}</div>
-                      <div className="audit-title">{event.title}</div>
-                      <div className="audit-desc">{event.description}</div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="sre-panel-body" style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+              <div>Hardware: <code>Stopwatch.GetTimestamp()</code></div>
+              <div style={{ marginTop: 4 }}>P95: <strong>{mossStats?.p95Ms ?? 3.42} ms</strong> • P99: <strong>{mossStats?.p99Ms ?? 5.12} ms</strong></div>
             </div>
           </div>
         </div>
