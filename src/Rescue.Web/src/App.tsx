@@ -1,36 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import * as signalR from '@microsoft/signalr';
-import { TopNav } from './components/TopNav';
-import { DashboardView } from './components/DashboardView';
-import { ConnectedTheDotsView } from './components/ConnectedTheDotsView';
-import { FixModal } from './components/FixModal';
-import { MossObservabilityView } from './components/MossObservabilityView';
-import { SystemExplorerView } from './components/SystemExplorerView';
-import { SubmissionHubView } from './components/SubmissionHubView';
-import { IntegrationsHubView } from './components/IntegrationsHubView';
+import { SidebarNav, NavTab } from './components/SidebarNav';
+import { OverviewView } from './components/OverviewView';
+import { IncidentsListView } from './components/IncidentsListView';
+import { IncidentCommandCenterView } from './components/IncidentCommandCenterView';
+import { EvidenceGraphView } from './components/EvidenceGraphView';
+import { RescueMemoryView } from './components/RescueMemoryView';
+import { DeploymentsView } from './components/DeploymentsView';
+import { IntegrationsView } from './components/IntegrationsView';
+import { SettingsView } from './components/SettingsView';
 import {
   Incident,
   ServiceHealth,
   AutonomyMode,
   MossObservabilityStats,
-  MossBenchmarkResult
+  MossBenchmarkResult,
+  Project
 } from './types';
-import { ShieldAlert, CheckCircle, AlertTriangle, FileCode } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'dots' | 'moss' | 'explorer' | 'submission' | 'integrations'>('dots');
+  const [activeTab, setActiveTab] = useState<NavTab>('overview');
   const [autonomyMode, setAutonomyMode] = useState<AutonomyMode>('Recommend');
-  const [systemStatus, setSystemStatus] = useState<string>('Healthy');
   const [services, setServices] = useState<ServiceHealth[]>([]);
   const [incident, setIncident] = useState<Incident | undefined>(undefined);
   const [mossStats, setMossStats] = useState<MossObservabilityStats | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(false);
-  const [isFixModalOpen, setIsFixModalOpen] = useState<boolean>(false);
-  const [dismissApprovalBanner, setDismissApprovalBanner] = useState<boolean>(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('acme-commerce');
 
   // Initialize SignalR & initial load
   useEffect(() => {
     fetchDashboard();
+    fetchProjects();
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/rescue')
@@ -39,13 +40,11 @@ export const App: React.FC = () => {
 
     connection.on('IncidentDetected', (inc: Incident) => {
       setIncident(inc);
-      setSystemStatus('Critical');
-      setDismissApprovalBanner(false);
     });
 
     connection.on('CorrelationCompleted', (corr: any) => {
       setIncident(prev => prev ? { ...prev, correlation: corr } : prev);
-      setActiveTab('dots'); // Automatically bring engineer to the showstopper view
+      setActiveTab('investigate'); // Focus on investigation command center
     });
 
     connection.on('MemoryMatchFound', (match: any) => {
@@ -74,7 +73,6 @@ export const App: React.FC = () => {
         proposedPatch: payload?.patch || prev.proposedPatch,
         validationReport: payload?.validation || prev.validationReport
       } : prev);
-      setDismissApprovalBanner(false);
     });
 
     connection.on('ApprovalGranted', (appr: any) => {
@@ -96,15 +94,12 @@ export const App: React.FC = () => {
 
     connection.on('IncidentResolved', (res: Incident) => {
       setIncident(res);
-      setSystemStatus('Healthy');
       fetchDashboard();
     });
 
     connection.on('EnvironmentReset', () => {
       setIncident(undefined);
-      setSystemStatus('Healthy');
-      setActiveTab('dots');
-      setDismissApprovalBanner(false);
+      setActiveTab('overview');
       fetchDashboard();
     });
 
@@ -131,7 +126,20 @@ export const App: React.FC = () => {
     }
   };
 
-  // Sync autonomy mode with backend
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch('/api/projects');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setProjects(data);
+        }
+      }
+    } catch (e) {
+      console.log('Projects fetch fallback:', e);
+    }
+  };
+
   const handleSetAutonomy = async (mode: AutonomyMode) => {
     setAutonomyMode(mode);
     try {
@@ -145,17 +153,14 @@ export const App: React.FC = () => {
     }
   };
 
-  // Run Killer Demo: API Change -> Production Incident
   const handlePlayKillerDemo = async () => {
     setLoading(true);
-    setDismissApprovalBanner(false);
     try {
       const res = await fetch('/api/demo/scenario/api-incident', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setIncident(data.incident);
-        setSystemStatus(data.incident.status === 'Resolved' ? 'Healthy' : 'Critical');
-        setActiveTab('dots'); // Highlight "RESCUE CONNECTED THE DOTS"
+        setActiveTab('investigate'); // Show Command Center directly
         fetchDashboard();
       }
     } finally {
@@ -163,22 +168,18 @@ export const App: React.FC = () => {
     }
   };
 
-  // Reset Environment
   const handleReset = async () => {
     setLoading(true);
     try {
       await fetch('/api/demo/reset', { method: 'POST' });
       setIncident(undefined);
-      setSystemStatus('Healthy');
-      setActiveTab('dots');
-      setDismissApprovalBanner(false);
+      setActiveTab('overview');
       fetchDashboard();
     } finally {
       setLoading(false);
     }
   };
 
-  // Approve & Deploy
   const handleApproveAndDeploy = async () => {
     if (!incident) return;
     setLoading(true);
@@ -187,8 +188,6 @@ export const App: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setIncident(data);
-        setSystemStatus('Healthy');
-        setDismissApprovalBanner(true);
         fetchDashboard();
       }
     } finally {
@@ -196,7 +195,6 @@ export const App: React.FC = () => {
     }
   };
 
-  // Reject Fix
   const handleReject = async () => {
     if (!incident) return;
     await fetch(`/api/incidents/${incident.id}/reject`, {
@@ -204,11 +202,8 @@ export const App: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: 'Rejected by SRE for further analysis' })
     });
-    setDismissApprovalBanner(true);
-    setIsFixModalOpen(false);
   };
 
-  // Run Benchmark
   const handleRunBenchmark = async (): Promise<MossBenchmarkResult> => {
     const res = await fetch('/api/performance/moss/benchmark', { method: 'POST' });
     const data = await res.json();
@@ -216,71 +211,94 @@ export const App: React.FC = () => {
     return data;
   };
 
-  const isAwaitingApproval = incident?.status === 'AwaitingApproval' && !dismissApprovalBanner;
+  const activeIncidentCount = incident && incident.status !== 'Resolved' ? 1 : 0;
+  const currentProject = projects.find(p => p.id === selectedProjectId) || {
+    id: 'acme-commerce',
+    name: 'Acme Commerce',
+    environment: 'Production'
+  };
 
   return (
-    <div className="app-shell">
-      <TopNav
+    <div className="app-layout-root">
+      {/* Left Global Sidebar Navigation */}
+      <SidebarNav
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        activeIncidentCount={activeIncidentCount}
         autonomyMode={autonomyMode}
         onSetAutonomy={handleSetAutonomy}
-        systemStatus={systemStatus}
-        mossStats={mossStats}
-        onRunKillerDemo={handlePlayKillerDemo}
+        onRunDemo={handlePlayKillerDemo}
         onReset={handleReset}
         loading={loading}
-        activeTab={activeTab}
-        onSelectTab={(tab) => setActiveTab(tab as any)}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        onSelectProject={setSelectedProjectId}
       />
 
-      <main className="main-viewport">
-        {activeTab === 'dots' && (
-          <ConnectedTheDotsView
+      {/* Main Content Area */}
+      <main className="app-main-viewport">
+        {activeTab === 'overview' && (
+          <OverviewView
             incident={incident}
-            mossStats={mossStats}
-            onOpenFixModal={() => setIsFixModalOpen(true)}
+            projectName={currentProject.name}
+            environment={currentProject.environment || 'Production'}
+            onInvestigateIncident={() => setActiveTab('investigate')}
+            onTriggerDemo={handlePlayKillerDemo}
+          />
+        )}
+
+        {activeTab === 'incidents' && (
+          <IncidentsListView
+            incident={incident}
+            onSelectIncident={(id) => setActiveTab('investigate')}
+            onTriggerDemo={handlePlayKillerDemo}
+            loading={loading}
+          />
+        )}
+
+        {activeTab === 'investigate' && (
+          <IncidentCommandCenterView
+            incident={incident}
             onApproveAndDeploy={handleApproveAndDeploy}
             onReject={handleReject}
+            onNavigateToEvidence={() => setActiveTab('evidence')}
+            onNavigateToMemory={() => setActiveTab('memory')}
+            onTriggerDemo={handlePlayKillerDemo}
+            loading={loading}
           />
         )}
 
-        {activeTab === 'dashboard' && (
-          <DashboardView
-            incident={incident}
-            services={services}
-            mossStats={mossStats}
-            onSelectIncident={() => setActiveTab('dots')}
-            onPlayKillerDemo={handlePlayKillerDemo}
-          />
+        {activeTab === 'evidence' && (
+          <EvidenceGraphView incident={incident} />
         )}
 
-        {activeTab === 'moss' && (
-          <MossObservabilityView
-            stats={mossStats}
-            onRunBenchmark={handleRunBenchmark}
-          />
+        {activeTab === 'memory' && (
+          <RescueMemoryView />
         )}
 
-        {activeTab === 'explorer' && (
-          <SystemExplorerView />
-        )}
-
-        {activeTab === 'submission' && (
-          <SubmissionHubView />
+        {activeTab === 'deployments' && (
+          <DeploymentsView incident={incident} />
         )}
 
         {activeTab === 'integrations' && (
-          <IntegrationsHubView />
+          <IntegrationsView
+            projects={projects}
+            selectedProjectId={selectedProjectId}
+            onSelectProject={setSelectedProjectId}
+            onProjectCreated={(newProj) => {
+              setProjects(prev => [...prev, newProj]);
+              setSelectedProjectId(newProj.id);
+            }}
+          />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsView
+            mossStats={mossStats}
+            onRunBenchmark={handleRunBenchmark}
+          />
         )}
       </main>
-
-      {/* Fix & Approval Modal */}
-      <FixModal
-        incident={incident}
-        isOpen={isFixModalOpen}
-        onClose={() => setIsFixModalOpen(false)}
-        onApprove={handleApproveAndDeploy}
-        onReject={handleReject}
-      />
     </div>
   );
 };
