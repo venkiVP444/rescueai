@@ -160,7 +160,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         </button>
 
         <a
-          href="http://localhost:5105/swagger/index.html"
+          href="/swagger/index.html"
           target="_blank"
           rel="noopener noreferrer"
           className="sidebar-nav-item swagger-nav-link"

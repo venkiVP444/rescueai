@@ -32,6 +32,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
   onSelectProject,
   onProjectCreated
 }) => {
+  const apiEndpoint = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5105';
   const [activeSubTab, setActiveSubTab] = useState<'applications' | 'sdk' | 'events'>('applications');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [newAppName, setNewAppName] = useState('');
@@ -311,7 +312,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
               <button
                 onClick={() =>
                   copyToClipboard(
-                    `curl -X POST http://localhost:5105/api/events \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_API_KEY" \\\n  -d '{\n    "projectId": "acme-commerce",\n    "service": "PaymentService",\n    "eventType": "ErrorSurge",\n    "severity": "CRITICAL",\n    "data": { "errorRate": 42.0 }\n  }'`,
+                    `curl -X POST ${apiEndpoint}/api/events \\\n  -H "Content-Type: application/json" \\\n  -H "X-API-Key: YOUR_API_KEY" \\\n  -d '{\n    "projectId": "acme-commerce",\n    "service": "PaymentService",\n    "eventType": "ErrorSurge",\n    "severity": "CRITICAL",\n    "data": { "errorRate": 42.0 }\n  }'`,
                     'curl'
                   )
                 }
@@ -322,7 +323,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
               </button>
             </div>
             <pre className="code-snippet-pre">
-{`curl -X POST http://localhost:5105/api/events \\
+{`curl -X POST ${apiEndpoint}/api/events \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -d '{
@@ -347,7 +348,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
               <button
                 onClick={() =>
                   copyToClipboard(
-                    `// Program.cs\nbuilder.Services.AddRescue(options => {\n    options.ProjectId = "acme-commerce";\n    options.ApiKey = builder.Configuration["Rescue:ApiKey"];\n    options.Endpoint = "http://localhost:5105";\n    options.AutoRedactPii = true;\n});\n\napp.UseRescueTelemetry();`,
+                    `// Program.cs\nbuilder.Services.AddRescue(options => {\n    options.ProjectId = "acme-commerce";\n    options.ApiKey = builder.Configuration["Rescue:ApiKey"];\n    options.Endpoint = "${apiEndpoint}";\n    options.AutoRedactPii = true;\n});\n\napp.UseRescueTelemetry();`,
                     'dotnet'
                   )
                 }
@@ -362,7 +363,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
 builder.Services.AddRescue(options => {
     options.ProjectId = "acme-commerce";
     options.ApiKey = builder.Configuration["Rescue:ApiKey"];
-    options.Endpoint = "http://localhost:5105";
+    options.Endpoint = "${apiEndpoint}";
     options.AutoRedactPii = true;
 });
 

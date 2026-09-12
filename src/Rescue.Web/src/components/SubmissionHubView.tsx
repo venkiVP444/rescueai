@@ -183,8 +183,8 @@ export const SubmissionHubView: React.FC = () => {
               {[
                 { name: 'Architecture Diagram', loc: 'docs/ARCHITECTURE.md & UI Topology Tab', status: 'VERIFIED' },
                 { name: 'Product Requirements Document (PRD)', loc: 'docs/PRD.md & UI Spec Tab', status: 'VERIFIED' },
-                { name: 'GitHub Repository & Clean Codebase', loc: '.NET 10 Clean Architecture (11/11 Tests Passed)', status: 'VERIFIED' },
-                { name: 'Deployed Link / Running Agent', loc: 'Local Engine: http://localhost:5173 & :5105', status: 'ACTIVE' },
+                { name: 'GitHub Repository & Clean Codebase', loc: '.NET 10 Clean Architecture (21/21 Tests Passed)', status: 'VERIFIED' },
+                { name: 'Deployed Link / Running Agent', loc: typeof window !== 'undefined' ? `Live: ${window.location.origin}` : 'Local: http://localhost:5173', status: 'ACTIVE' },
                 { name: 'Video Demo Walkthrough Script', loc: 'docs/DEMO_SCRIPT.md (10:00 - 10:05 Timeline)', status: 'READY' }
               ].map((item, i) => (
                 <tr key={i}>

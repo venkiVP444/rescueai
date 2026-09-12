@@ -18,6 +18,7 @@ import {
 import { Project, RescueEvent } from '../types';
 
 export const IntegrationsHubView: React.FC = () => {
+  const apiEndpoint = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5105';
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('acme-commerce');
   const [events, setEvents] = useState<RescueEvent[]>([]);
@@ -196,7 +197,7 @@ export const IntegrationsHubView: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <a
-            href="http://localhost:5105/swagger/index.html"
+            href="/swagger/index.html"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary-action"
@@ -298,7 +299,7 @@ export const IntegrationsHubView: React.FC = () => {
                 <span style={{ color: '#6B7280' }}>// 1. Register RESCUE in Program.cs</span><br />
                 builder.Services.<span style={{ color: '#60A5FA' }}>AddRescue</span>(options =&gt;<br />
                 &#123;<br />
-                &nbsp;&nbsp;options.Endpoint = <span style={{ color: '#34D399' }}>"http://localhost:5105"</span>;<br />
+                &nbsp;&nbsp;options.Endpoint = <span style={{ color: '#34D399' }}>"{apiEndpoint}"</span>;<br />
                 &nbsp;&nbsp;options.ProjectId = <span style={{ color: '#34D399' }}>"{selectedProject?.id ?? 'your-project'}"</span>;<br />
                 &nbsp;&nbsp;options.ApiKey = <span style={{ color: '#FCD34D' }}>"YOUR_PROJECT_API_KEY"</span>;<br />
                 &nbsp;&nbsp;options.Service = <span style={{ color: '#34D399' }}>"{selectedProject?.services[0] ?? 'OrdersService'}"</span>;<br />
@@ -323,7 +324,7 @@ export const IntegrationsHubView: React.FC = () => {
                 Connect GitHub Actions, GitLab CI, Kubernetes alerts, or Datadog webhooks by posting standardized RESCUE events.
               </p>
               <div style={{ background: '#06090F', border: '1px solid var(--border-muted)', borderRadius: 6, padding: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-code)', overflowX: 'auto', lineHeight: 1.4 }}>
-                curl -X POST http://localhost:5105/api/v1/events \<br />
+                curl -X POST {apiEndpoint}/api/v1/events \<br />
                 &nbsp;&nbsp;-H "Content-Type: application/json" \<br />
                 &nbsp;&nbsp;-H "X-API-Key: YOUR_PROJECT_API_KEY" \<br />
                 &nbsp;&nbsp;-d '&#123;<br />
