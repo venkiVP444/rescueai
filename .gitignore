@@ -47,3 +47,7 @@ __pycache__/
 *.pyd
 .pytest_cache/
 src/Rescue.Infrastructure/MossBridge/core/
+## Tools & Executables
+tools/
+*.exe
+
