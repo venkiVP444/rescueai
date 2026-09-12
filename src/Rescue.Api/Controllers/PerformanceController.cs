@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Rescue.Domain.Interfaces;
@@ -20,6 +21,20 @@ public class PerformanceController : ControllerBase
     {
         var stats = _mossService.GetObservabilityStats();
         return Ok(stats);
+    }
+
+    [HttpGet("moss/query")]
+    public async Task<IActionResult> QueryMoss([FromQuery] string q)
+    {
+        var result = await _mossService.SearchAsync(q ?? "");
+        return Ok(new
+        {
+            query = result.Query,
+            latencyMs = result.LatencyMs,
+            provider = result.Provider.ToString(),
+            documents = result.Documents.Select(d => $"{d.DocId} (Relevance: {d.RelevanceScore:F2})").ToList(),
+            evidence = result.Documents
+        });
     }
 
     [HttpPost("moss/benchmark")]

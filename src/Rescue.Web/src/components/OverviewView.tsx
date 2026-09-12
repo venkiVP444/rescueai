@@ -115,7 +115,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             {hasActiveIncident ? '42%' : '0%'}
           </div>
           <div className="metric-subtext">
-            {hasActiveIncident ? 'Failing transactions' : 'Normal checkout baseline'}
+            {hasActiveIncident ? 'Failing transactions (Synthetic Demo Telemetry)' : 'Normal checkout baseline'}
           </div>
         </div>
 

@@ -70,6 +70,7 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
   }
 
   const isResolved = incident.status === 'Resolved';
+  const isRejected = incident.status === 'Rejected' || incident.approval?.status === 'Rejected';
   const confidenceScore = incident.correlation?.score ?? 96;
   const beforeRate = incident.errorRateBefore ?? 42.0;
   const afterRate = incident.verification?.afterErrorRate ?? (isResolved ? 1.8 : undefined);
@@ -101,9 +102,9 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
               {incident.id} — Payment Service API Failure
             </h1>
             <span className="badge-severity p1">P1 CRITICAL</span>
-            <span className={`status-pill-lg ${isResolved ? 'healthy' : 'attention'}`}>
+            <span className={`status-pill-lg ${isResolved ? 'healthy' : isRejected ? 'rejected' : 'attention'}`}>
               <span className="dot"></span>
-              {isResolved ? '✓ Resolved & Verified' : '⚠ Waiting for Your Approval'}
+              {isResolved ? '✓ Resolved & Verified' : isRejected ? '✕ Approval Rejected by SRE' : '⚠ Waiting for Your Approval'}
             </span>
           </div>
         </div>
@@ -123,7 +124,7 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
               )}
             </div>
             <span className="rate-sub">
-              {isResolved ? 'Recovery confirmed in staging sandbox' : 'Peak checkout failure rate'}
+              {isResolved ? 'Recovered in Staging Sandbox (Synthetic Demo Telemetry)' : 'Synthetic Demo Telemetry'}
             </span>
           </div>
         </div>
@@ -378,7 +379,7 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
               <FileCode style={{ width: 14, height: 14 }} />
               <span>{showCodeDiff ? 'Hide code diff' : 'Review code diff'}</span>
             </button>
-            {!isResolved && (
+            {!isResolved && !isRejected && (
               <button
                 onClick={onApproveAndDeploy}
                 className="btn-primary-action"
@@ -438,7 +439,27 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
       </div>
 
       {/* 6. Human Approval Gate Section (Primary Action) */}
-      {!isResolved ? (
+      {isRejected ? (
+        <div className="enterprise-card approval-gate-card" style={{ borderColor: '#EF4444', background: '#FEF2F2' }}>
+          <div className="gate-header-area">
+            <div className="gate-title-block">
+              <ShieldAlert style={{ width: 24, height: 24, color: '#DC2626' }} />
+              <div>
+                <h3 className="gate-title" style={{ color: '#991B1B' }}>Approval Rejected by Human Operator</h3>
+                <p className="gate-subtitle" style={{ color: '#B91C1C' }}>
+                  Deployment halted and pull request execution cancelled. No changes will be applied to production or staging.
+                </p>
+              </div>
+            </div>
+            <span className="gate-security-badge" style={{ background: '#FEE2E2', color: '#991B1B', borderColor: '#FCA5A5' }}>
+              Execution Prevented
+            </span>
+          </div>
+          <div className="gate-disclaimer-box" style={{ background: '#FFF', borderColor: '#FECACA', color: '#7F1D1D', marginTop: 14 }}>
+            <strong>Operator Decision:</strong> &ldquo;{incident.approval?.decisionNotes || 'Rejected by SRE for further analysis'}&rdquo;
+          </div>
+        </div>
+      ) : !isResolved ? (
         <div className="enterprise-card approval-gate-card">
           <div className="gate-header-area">
             <div className="gate-title-block">
@@ -516,7 +537,7 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
               <span className="dep-lbl">GitHub Pull Request:</span>
               <span className="dep-val pr">
                 <GitPullRequest style={{ width: 14, height: 14 }} />
-                <span>PR #{prNumber}</span>
+                <span>PR #{prNumber} (Sandbox / Demo Mode)</span>
               </span>
             </div>
             <div className="dep-meta-block">
@@ -530,7 +551,7 @@ export const IncidentCommandCenterView: React.FC<IncidentCommandCenterViewProps>
           </div>
 
           <div className="staging-comparison-box">
-            <div className="comp-title">Staging recovery verification</div>
+            <div className="comp-title">Staging recovery verification (Synthetic Demo Telemetry)</div>
             <div className="comp-columns">
               <div className="comp-col before">
                 <span className="comp-col-lbl">Before Fix:</span>

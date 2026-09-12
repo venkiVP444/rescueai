@@ -220,6 +220,11 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
     {
         var incident = _activeIncident ?? new Incident { Id = incidentId };
 
+        if (incident.Status == IncidentStatus.Rejected)
+        {
+            throw new InvalidOperationException($"Incident {incidentId} was rejected by human operator and cannot be deployed.");
+        }
+
         // 1. Human Approval Granted
         incident.Approval = new ApprovalRecord
         {
@@ -301,7 +306,7 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
         await _memoryService.ResetMemoriesAsync(cancellationToken);
     }
 
-    public Task<Incident> RejectFixAsync(string incidentId, string reason, CancellationToken cancellationToken = default)
+    public async Task<Incident> RejectFixAsync(string incidentId, string reason, CancellationToken cancellationToken = default)
     {
         var incident = _activeIncident ?? new Incident { Id = incidentId };
         incident.Status = IncidentStatus.Rejected;
@@ -312,8 +317,14 @@ public class InvestigationOrchestrator : IInvestigationOrchestrator
             ApprovedAt = DateTime.UtcNow,
             DecisionNotes = reason
         };
+        // Explicitly clear any deployment/PR artifacts to guarantee no execution
+        incident.GitHubPr = null;
+        incident.Verification = null;
+        _activeIncident = incident;
 
-        return Task.FromResult(incident);
+        await _notifier.BroadcastEventAsync("ApprovalRejected", incident);
+
+        return incident;
     }
 
     public async Task<Incident> RunStandaloneRedisIncidentAsync(CancellationToken cancellationToken = default)

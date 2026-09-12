@@ -151,10 +151,12 @@ public class RescueUnitTests : IDisposable
     }
 
     [Fact]
-    public async Task ValidationEngine_ShouldPassAllTests_ForApiMigration()
+    public async Task ValidationEngine_ShouldPassAllTests_ForValidPatch()
     {
-        var patch = new ProposedPatch { FilePath = "ApiClient.cs" };
-        var report = await _validationEngine.ValidatePatchAsync(patch, "api-migration");
+        var apiChange = new ApiChange { Id = "API-420", OldField = "customer_id", NewField = "customerId" };
+        var validPatch = _patchEngine.GenerateApiMigrationPatch(apiChange);
+
+        var report = await _validationEngine.ValidatePatchAsync(validPatch, "api-migration");
 
         Assert.True(report.IsSuccess);
         Assert.True(report.SyntaxValid);
@@ -162,17 +164,72 @@ public class RescueUnitTests : IDisposable
         Assert.Equal(8, report.PassedTests);
         Assert.True(report.SecretsCheckPassed);
         Assert.True(report.RegressionCheckPassed);
+        Assert.Contains("100% SUCCESS", report.OutputSummary);
+    }
+
+    [Fact]
+    public async Task ValidationEngine_ShouldFail_WhenDeprecatedFieldRemains()
+    {
+        var invalidPatch = new ProposedPatch
+        {
+            FilePath = "ApiClient.cs",
+            NewContent = "var payload = new { customer_id = request.CustomerId };",
+            UnifiedDiff = "+ customer_id = request.CustomerId;"
+        };
+
+        var report = await _validationEngine.ValidatePatchAsync(invalidPatch, "api-migration");
+
+        Assert.False(report.IsSuccess);
+        Assert.False(report.RegressionCheckPassed);
+        Assert.True(report.PassedTests < 8);
+        Assert.Contains("FAILED", report.OutputSummary);
+    }
+
+    [Fact]
+    public async Task ValidationEngine_ShouldFail_WhenSyntaxInvalid()
+    {
+        var brokenSyntaxPatch = new ProposedPatch
+        {
+            FilePath = "ApiClient.cs",
+            NewContent = "var payload = new { customerId = request.CustomerId; // missing closing brace",
+            UnifiedDiff = "+ customerId = request.CustomerId;"
+        };
+
+        var report = await _validationEngine.ValidatePatchAsync(brokenSyntaxPatch, "api-migration");
+
+        Assert.False(report.IsSuccess);
+        Assert.False(report.SyntaxValid);
+        Assert.Contains("Syntax: INVALID", report.OutputSummary);
+    }
+
+    [Fact]
+    public async Task ValidationEngine_ShouldFail_WhenSecretsDetected()
+    {
+        var leakyPatch = new ProposedPatch
+        {
+            FilePath = "ApiClient.cs",
+            NewContent = "var payload = new { customerId = request.CustomerId };\nstring dbPassword = \"password = \\\"super_secret_production_credential\\\";\";",
+            UnifiedDiff = "+ string dbPassword = \"password = \\\"super_secret_production_credential\\\";\";"
+        };
+
+        var report = await _validationEngine.ValidatePatchAsync(leakyPatch, "api-migration");
+
+        Assert.False(report.IsSuccess);
+        Assert.False(report.SecretsCheckPassed);
+        Assert.Contains("Secrets: DETECTED", report.OutputSummary);
     }
 
     [Fact]
     public async Task ValidationEngine_ShouldPassAllTests_ForRedisIncident()
     {
-        var patch = new ProposedPatch { FilePath = "payment-production.json" };
+        var incident = new Incident { Id = "INC-104", Service = "PaymentService" };
+        var patch = _patchEngine.GenerateRedisConfigPatch(incident);
         var report = await _validationEngine.ValidatePatchAsync(patch, "redis-incident");
 
         Assert.True(report.IsSuccess);
-        Assert.Equal(184, report.TotalTests);
-        Assert.Equal(184, report.PassedTests);
+        Assert.Equal(2, report.TotalTests);
+        Assert.Equal(2, report.PassedTests);
+        Assert.True(report.RegressionCheckPassed);
     }
 
     [Fact]

@@ -79,6 +79,10 @@ export const App: React.FC = () => {
       setIncident(prev => prev ? { ...prev, approval: appr, status: 'Deploying' } : prev);
     });
 
+    connection.on('ApprovalRejected', (rej: any) => {
+      setIncident(rej);
+    });
+
     connection.on('GitHubPrCreated', (pr: any) => {
       setIncident(prev => prev ? { ...prev, githubPr: pr } : prev);
     });
@@ -131,8 +135,9 @@ export const App: React.FC = () => {
       const res = await fetch('/api/projects');
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setProjects(data);
+        const list = Array.isArray(data) ? data : (data.projects || []);
+        if (list.length > 0) {
+          setProjects(list);
         }
       }
     } catch (e) {
@@ -197,11 +202,21 @@ export const App: React.FC = () => {
 
   const handleReject = async () => {
     if (!incident) return;
-    await fetch(`/api/incidents/${incident.id}/reject`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason: 'Rejected by SRE for further analysis' })
-    });
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/incidents/${incident.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Rejected by SRE for further analysis' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIncident(data);
+        fetchDashboard();
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRunBenchmark = async (): Promise<MossBenchmarkResult> => {

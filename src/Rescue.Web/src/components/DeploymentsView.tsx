@@ -105,7 +105,7 @@ export const DeploymentsView: React.FC<DeploymentsViewProps> = ({ incident }) =>
             <span className="dep-lbl">GitHub Pull Request:</span>
             <span className="dep-val pr">
               <GitPullRequest style={{ width: 15, height: 15 }} />
-              <span>PR #{prNumber}</span>
+              <span>PR #{prNumber} (Sandbox / Demo Mode)</span>
             </span>
           </div>
 
@@ -134,7 +134,7 @@ export const DeploymentsView: React.FC<DeploymentsViewProps> = ({ incident }) =>
 
         {/* Staging Verification Before/After Comparison */}
         <div className="staging-comparison-box">
-          <div className="comp-title">Staging environment error rate comparison</div>
+          <div className="comp-title">Staging environment error rate comparison (Synthetic Demo Telemetry)</div>
           <div className="comp-columns">
             <div className="comp-col before">
               <span className="comp-col-lbl">Before Fix:</span>

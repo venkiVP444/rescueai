@@ -24,11 +24,16 @@ public class MossRetrievalService : IMossRetrievalService
     private readonly ConcurrentQueue<MossMetric> _metricsQueue = new();
     private readonly RetrievalProvider _configuredProvider;
 
+    private readonly string _bridgeUrl;
+    private static Process? _bridgeProcess;
+    private static readonly object _bridgeLock = new();
+
     public MossRetrievalService(HttpClient httpClient, string? corpusPath = null)
     {
         _httpClient = httpClient;
         _projectId = Environment.GetEnvironmentVariable("MOSS_PROJECT_ID");
         _projectKey = Environment.GetEnvironmentVariable("MOSS_PROJECT_KEY");
+        _bridgeUrl = Environment.GetEnvironmentVariable("MOSS_BRIDGE_URL") ?? "http://127.0.0.1:5188";
 
         // Determine active provider based on valid cloud configuration
         _configuredProvider = (!string.IsNullOrWhiteSpace(_projectId) && !string.IsNullOrWhiteSpace(_projectKey))
@@ -47,6 +52,67 @@ public class MossRetrievalService : IMossRetrievalService
         }
 
         _corpus = KnowledgeCorpusLoader.LoadDocuments(root);
+
+        if (_configuredProvider == RetrievalProvider.MossCloud)
+        {
+            EnsureBridgeRunning();
+        }
+    }
+
+    private void EnsureBridgeRunning()
+    {
+        if (_configuredProvider != RetrievalProvider.MossCloud) return;
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+            var check = _httpClient.GetAsync($"{_bridgeUrl}/health", cts.Token).GetAwaiter().GetResult();
+            if (check.IsSuccessStatusCode) return;
+        }
+        catch
+        {
+            // Bridge not responding yet, attempt auto-spawn
+        }
+
+        lock (_bridgeLock)
+        {
+            if (_bridgeProcess != null && !_bridgeProcess.HasExited) return;
+
+            try
+            {
+                var scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "src", "Rescue.Infrastructure", "MossBridge", "moss_bridge.py");
+                if (!File.Exists(scriptPath))
+                {
+                    scriptPath = Path.Combine(Directory.GetCurrentDirectory(), "src", "Rescue.Infrastructure", "MossBridge", "moss_bridge.py");
+                }
+                if (!File.Exists(scriptPath))
+                {
+                    scriptPath = @"C:\personal\RescueAI\src\Rescue.Infrastructure\MossBridge\moss_bridge.py";
+                }
+
+                if (File.Exists(scriptPath))
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "python",
+                        Arguments = $"\"{scriptPath}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = false,
+                        RedirectStandardError = false
+                    };
+                    if (!string.IsNullOrEmpty(_projectId)) psi.EnvironmentVariables["MOSS_PROJECT_ID"] = _projectId;
+                    if (!string.IsNullOrEmpty(_projectKey)) psi.EnvironmentVariables["MOSS_PROJECT_KEY"] = _projectKey;
+
+                    _bridgeProcess = Process.Start(psi);
+                    Thread.Sleep(800);
+                }
+            }
+            catch
+            {
+                // Silently handle spawn failures; queries will safely fall back to LocalRetrievalFallback
+            }
+        }
     }
 
     public async Task<MossSearchResult> SearchAsync(string query, MossSearchOptions? options = null, CancellationToken cancellationToken = default)
@@ -173,25 +239,21 @@ public class MossRetrievalService : IMossRetrievalService
         // Synthetic remote network vector database round-trip baseline (HTTP handshake + TLS + remote vector search + network transfer)
         var remoteBaselineMs = 185.0;
         var speedup = Math.Round(remoteBaselineMs / Math.Max(actualMs, 0.1), 1);
+        var providerName = res.Provider == RetrievalProvider.MossCloud ? "Moss Cloud" : "Local Retrieval Fallback";
 
         return new MossBenchmarkResult(
             MossLatencyMs: actualMs,
             SyntheticRemoteBaselineMs: remoteBaselineMs,
             SpeedupFactor: speedup,
-            Note: "Actual hardware-timed query vs Synthetic Remote Baseline (traditional external vector database roundtrip)."
+            Note: $"Actual hardware-timed query ({providerName}) vs Synthetic Remote Baseline (traditional external vector database roundtrip)."
         );
     }
 
     private async Task<List<EvidenceItem>> QueryMossCloudAsync(string query, MossSearchOptions options, CancellationToken cancellationToken)
     {
-        // Conforms to official Moss REST management and query endpoint
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://service.usemoss.dev/v1/manage/query");
-        request.Headers.Add("x-project-key", _projectKey);
-        request.Headers.Add("x-service-version", "v1");
-
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{_bridgeUrl}/query");
         var payload = new
         {
-            indexName = "rescue-knowledge",
             query = query,
             topK = options.TopK,
             alpha = options.Alpha
@@ -205,16 +267,29 @@ public class MossRetrievalService : IMossRetrievalService
         using var doc = JsonDocument.Parse(json);
 
         var hits = new List<EvidenceItem>();
-        if (doc.RootElement.TryGetProperty("docs", out var docsArray))
+        if (doc.RootElement.TryGetProperty("hits", out var hitsArray))
         {
-            foreach (var d in docsArray.EnumerateArray())
+            foreach (var d in hitsArray.EnumerateArray())
             {
+                var docId = d.GetProperty("docId").GetString() ?? "doc";
+                var snippet = d.TryGetProperty("snippet", out var s) ? s.GetString() ?? "" : "";
+                var score = d.TryGetProperty("score", out var sc) ? sc.GetDouble() : 0.90;
+
+                // Enrich with corpus metadata if matched
+                var localMatch = _corpus.FirstOrDefault(c => 
+                    c.Id.Equals(docId, StringComparison.OrdinalIgnoreCase) ||
+                    docId.Contains(c.Id.Replace('\\', '/').Replace('.', '_'), StringComparison.OrdinalIgnoreCase) ||
+                    c.FilePath.Contains(docId, StringComparison.OrdinalIgnoreCase));
+
                 hits.Add(new EvidenceItem
                 {
-                    DocId = d.GetProperty("id").GetString() ?? "doc",
-                    Title = d.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "",
-                    Snippet = d.TryGetProperty("text", out var txt) ? txt.GetString() ?? "" : "",
-                    RelevanceScore = d.TryGetProperty("score", out var s) ? s.GetDouble() : 0.88,
+                    DocId = docId,
+                    Title = localMatch?.Title ?? docId,
+                    Type = localMatch?.Type ?? "knowledge",
+                    Service = localMatch?.Service ?? "AcmePayments",
+                    Snippet = !string.IsNullOrWhiteSpace(snippet) ? snippet : (localMatch != null && localMatch.Content.Length > 200 ? localMatch.Content.Substring(0, 200) + "..." : (localMatch?.Content ?? "")),
+                    RelevanceScore = score,
+                    FilePath = localMatch?.FilePath ?? docId,
                     Provider = RetrievalProvider.MossCloud
                 });
             }

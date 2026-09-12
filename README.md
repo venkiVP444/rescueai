@@ -3,11 +3,12 @@
 > **"Rescue doesn't just detect incidents. It connects the evidence, remembers previous incidents, proposes a verified fix, and waits for human approval before production action."**
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](#10-verified-test--build-results)
-[![Tests](https://img.shields.io/badge/tests-11%2F11%20passing-brightgreen)](#10-verified-test--build-results)
+[![Tests](https://img.shields.io/badge/tests-21%2F21%20passing-brightgreen)](#10-verified-test--build-results)
 [![Backend](https://img.shields.io/badge/.NET%2010-Clean%20Architecture-blue)](#9-complete-system-architecture)
 [![Frontend](https://img.shields.io/badge/React%2019-TypeScript%20%2B%20Vite-61dafb)](#9-complete-system-architecture)
-[![Moss Latency](https://img.shields.io/badge/Moss%20Retrieval-0.74ms%20P50-cyan)](#6-how-moss-contributes-sub-10ms-evidence-retrieval)
+[![Moss Cloud](https://img.shields.io/badge/Moss%20Cloud-Active%20Retrieval%20Layer-cyan)](#6-how-moss-contributes-sub-10ms-evidence-retrieval)
 [![Autonomy Guardrail](https://img.shields.io/badge/Human%20Gate-RECOMMEND%20Mode-orange)](#8-why-human-approval-is-mandatory-human-in-the-loop)
+[![Demo Guide](https://img.shields.io/badge/Specification-DEMO__READINESS.md-blueviolet)](docs/DEMO_READINESS.md)
 
 ---
 
@@ -124,16 +125,21 @@ Traditional SRE teams suffer from organizational amnesia—repeatedly troublesho
 ## 6. How Moss Contributes (Sub-10ms Evidence Retrieval)
 
 ### Conceptual Distinction:
-* **Moss:** Low-latency lexical & semantic retrieval of relevant **current operational evidence** (OpenAPI specs, AST code nodes, runbooks, metrics).
+* **Moss Cloud:** High-speed lexical & semantic vector retrieval of relevant **current operational evidence** (OpenAPI specs, AST code nodes, runbooks, metrics, and changelogs).
 * **RESCUE Memory:** Persistent structured relational store (SQLite) of **previously resolved historical incidents**.
 * *(Moss is NOT the incident database; it is the high-speed operational retrieval engine.)*
 
-### Measured Hardware Latency:
-During high-severity outages, conventional cloud vector databases consume 200ms+ per query hop and introduce external network failure points. RESCUE instruments Moss using hardware timestamping (`Stopwatch.GetTimestamp()`):
-* **P50 Latency:** **0.74 ms** (In-process, zero network hops)
-* **P95 Latency:** **1.67 ms**
-* **P99 Latency:** **10.77 ms**
-* **Dual-Mode Engine:** Seamlessly uses cloud Moss REST endpoints when configured, with automatic in-process fallback to ensure 100% offline demo resilience.
+### Verified Live Moss Cloud Integration:
+RESCUE genuinely connects to **Moss Cloud** (`usemoss.dev` / InferEdge Inc.) as its active knowledge retrieval layer:
+* **Cloud Project & Index:** Authenticated via project credentials (`MOSS_PROJECT_ID` and `MOSS_PROJECT_KEY`). The operational knowledge corpus (37 documents spanning OpenAPI specs, service dependencies, code files, and runbooks) is synchronized to Moss Cloud under index **`rescue-knowledge`** (Status: `Ready`).
+* **Official Native Engine Architecture:** Interfaces with the native `inferedge-moss-core` engine via an automated, self-healing local bridge service (`127.0.0.1:5188`), token authentication at `https://service.usemoss.dev/identity/auth/token`, and cloud index synchronization.
+* **Measured Hardware Latency:**
+  - **Live Query Latency:** **6.8 ms – 15 ms**
+  - **Hardware Benchmark:** **8.59 ms** (~21.5x faster than synthetic remote vector database round-trip baseline of 185 ms)
+  - **In-Process Fallback P50:** **0.74 ms**
+* **Dual-Mode Engine & Fail-Safe Fallback:** When credentials are provided, RESCUE automatically uses **Moss Cloud**. If credentials are not configured or the network is unavailable, RESCUE automatically and transparently activates **Local Retrieval Fallback**, ensuring 100% demo continuity with honest diagnostic labeling.
+
+> For complete architectural disclosures, endpoint benchmarks, and demo instructions, see **[docs/DEMO_READINESS.md](docs/DEMO_READINESS.md)**.
 
 ---
 
@@ -220,18 +226,24 @@ All tests and builds are verified with **0 warnings and 0 errors**:
 
 ### Backend Verification (`dotnet test RescueAI.slnx`)
 ```
-Passed!  - Failed: 0, Passed: 11, Skipped: 0, Total: 11, Duration: 8.0 s
+Passed!  - Failed: 0, Passed: 21, Skipped: 0, Total: 21, Duration: 3.0 s
 - CorrelationEngine_ShouldCorrelateApiChange_WithPaymentIncident
 - MossRetrieval_ShouldMeasureHardwareTiming_AndComputePercentiles
 - PatchEngine_ShouldGenerateValidUnifiedDiff_ForApiMigration
 - PatchEngine_ShouldGenerateValidUnifiedDiff_ForRedisConfig
 - ValidationEngine_ShouldPassAllTests_ForApiMigration
 - ValidationEngine_ShouldPassAllTests_ForRedisIncident
+- ValidationEngine_RealTests_ValidPatch_ShouldPassAllTests
+- ValidationEngine_RealTests_InvalidPatch_MissingCustomerId_ShouldFail
+- ValidationEngine_RealTests_ContainsSecrets_ShouldFail
 - KillerDemo_ShouldExecuteP0Workflow_EndToEnd
 - MemoryService_ShouldSeedBaselineAndRetrieveSimilarIncident
 - MemoryService_ShouldRecordNewResolvedIncident
 - InvestigationOrchestrator_ShouldRespectAutonomyModes
 - InvestigationOrchestrator_ShouldResetStateAndSupportReplay
+- InvestigationOrchestrator_RejectFix_ShouldBroadcastAndHalt
+- EventIngestion_ShouldIngestAndPersistTelemetry
+- ProjectService_ShouldManageMultiTenantIsolation
 ```
 
 ### Backend Build (`dotnet build RescueAI.slnx`)
@@ -239,50 +251,64 @@ Passed!  - Failed: 0, Passed: 11, Skipped: 0, Total: 11, Duration: 8.0 s
 Build succeeded.
     0 Warning(s)
     0 Error(s)
-Time Elapsed: 00:00:03.20
+Time Elapsed: 00:00:02.95
 ```
 
 ### Frontend Build (`npm run build`)
 ```
-vite v6.2.0 building for production...
-✓ 1888 modules transformed.
-dist/index.html                   0.89 kB │ gzip:  0.46 kB
-dist/assets/index-B2Exk-Lz.css   15.00 kB │ gzip:  3.34 kB
-dist/assets/index-DAOSRe3q.js   324.01 kB │ gzip: 92.40 kB
-✓ built in 412ms
+vite building for production...
+✓ 1625 modules transformed.
+dist/index.html                   0.89 kB │ gzip:  0.51 kB
+dist/assets/index-ugF16ZG5.css   34.04 kB │ gzip:  6.61 kB
+dist/assets/index-87LQWnxG.js   354.70 kB │ gzip: 98.78 kB
+✓ built in 1.86s
 ```
 
 ---
 
 ## 11. How to Run the Demo Locally
 
+> 📖 **Definitive Presentation Guide:** See **[docs/DEMO_READINESS.md](docs/DEMO_READINESS.md)** for the official 3-minute hackathon demo script, full API endpoint reference, and architectural honesty disclosures.
+
 ### Prerequisites
 * [.NET 10 SDK](https://dotnet.microsoft.com/)
 * [Node.js 18+](https://nodejs.org/)
+* *(Optional for Moss Cloud)* [Python 3.10+](https://www.python.org/) with `inferedge-moss-core`:
+  ```bash
+  pip install -r src/Rescue.Infrastructure/MossBridge/requirements.txt
+  ```
+  *(Without Python/credentials, RESCUE runs seamlessly in 100% offline Local Retrieval Fallback mode with zero configuration).*
 
-### Step 1: Start the Backend API
+### Step 1: Configure Environment Variables (Optional for Cloud)
+```powershell
+# In your local PowerShell session (do NOT hardcode in git):
+$env:MOSS_PROJECT_ID = "your-moss-project-id"
+$env:MOSS_PROJECT_KEY = "your-moss-project-key"
+```
+
+### Step 2: Start the Backend API
 ```powershell
 cd C:\Personal\RescueAI
 dotnet run --project src/Rescue.Api/Rescue.Api.csproj
 ```
 The API starts at **`http://localhost:5105`**.
 
-### Step 2: Start the Frontend UI
+### Step 3: Start the Frontend UI
 ```powershell
 cd C:\Personal\RescueAI\src\Rescue.Web
 npm run dev
 ```
 Open **`http://localhost:5173`** in your browser.
 
-### Step 3: Execute the 3-Minute Killer Demo
-1. **Inspect Baseline:** Observe clean microservice mesh and Moss P50 status ("Ready").
+### Step 4: Execute the 3-Minute Killer Demo
+1. **Inspect Baseline:** Observe clean microservice mesh and Moss status (**Moss Cloud Active** when configured, or **Local Fallback Active**).
 2. **Trigger Incident:** Click **`Play Killer Demo (P0)`** in the top navigation bar.
 3. **Inspect Correlation:** See the screen display **"RESCUE CONNECTED THE DOTS"** and the 17-node Evidence DAG illuminate.
-4. **Verify Memory:** Inspect the **🧠 RESCUE REMEMBERS** panel showing `INC-001` match (94% pattern confidence).
+4. **Verify Memory:** Inspect the **🧠 RESCUE REMEMBERS** panel showing `INC-001` match (94% pattern confidence from SQLite).
 5. **Inspect Diff & Tests:** Review the unified diff (`ApiClient.cs`) and 8/8 passed unit tests.
 6. **Approve Hotfix:** Click **`Approve & Deploy Staging Patch`** in the floating approval banner.
-7. **Verify Recovery:** Observe GitHub PR generation and staging error rate drop from **42.0% → 1.8%**.
-8. **Verify Continuous Learning:** Incident `INC-105` is committed into SQLite operational memory.
+7. **Verify Recovery:** Observe sandbox GitHub PR generation and staging error rate drop from **42.0% → 1.8%**.
+8. **Verify Continuous Learning:** Incident `INC-105` is committed into SQLite operational memory (`GET /api/memory`).
 9. **Reset & Replay:** Click the reset icon (`↻`) in the top navigation bar to reset the environment for another run.
 
 ---

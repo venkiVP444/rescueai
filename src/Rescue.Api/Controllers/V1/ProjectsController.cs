@@ -17,6 +17,7 @@ public class CreateProjectRequest
 
 [ApiController]
 [Route("api/v1/projects")]
+[Route("api/projects")]
 public class ProjectsController : ControllerBase
 {
     private readonly IProjectService _projectService;

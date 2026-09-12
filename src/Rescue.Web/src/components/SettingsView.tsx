@@ -305,7 +305,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ mossStats, onRunBenc
               <div className="stat-box">
                 <div className="stat-lbl">Provider Mode</div>
                 <div className="stat-val purple">
-                  {mossStats?.currentProvider || 'Moss Cloud (Local Fallback)'}
+                  {mossStats?.currentProvider === 'MossCloud' ? 'Moss Cloud retrieval' : 'Local Retrieval Fallback'}
                 </div>
               </div>
             </div>

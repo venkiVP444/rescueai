@@ -72,15 +72,17 @@ export const MossObservabilityView: React.FC<MossObservabilityViewProps> = ({
       <div className="incident-header-bar">
         <div>
           <div className="incident-badge-row">
-            <span className="sev-badge resolved">RETRIEVAL ENGINE ACTIVE</span>
-            <span className="status-chip">YC F25 Technology</span>
-            <span className="status-chip" style={{ color: 'var(--info-cyan)' }}>Sub-10ms Guarantee</span>
+            <span className="sev-badge resolved">
+              {stats?.currentProvider === 'MossCloud' ? 'MOSS CLOUD ACTIVE' : 'LOCAL RETRIEVAL FALLBACK ACTIVE'}
+            </span>
+            <span className="status-chip">{stats?.currentProvider === 'MossCloud' ? 'YC F25 Technology' : 'In-Process Fallback'}</span>
+            <span className="status-chip" style={{ color: 'var(--info-cyan)' }}>Hardware Benchmark</span>
           </div>
-          <h1 className="incident-title-text">Moss Latency &amp; Retrieval Observability</h1>
+          <h1 className="incident-title-text">Retrieval Engine Observability</h1>
           <div className="incident-meta-sub">
             <span>Hardware Timing: <strong>Stopwatch.GetTimestamp()</strong></span>
             <span>•</span>
-            <span>Vector DB Overhead: <strong>0 ms (In-Memory Traversal)</strong></span>
+            <span>Active Provider: <strong>{stats?.currentProvider === 'MossCloud' ? 'Moss Cloud retrieval' : 'Local Retrieval Fallback'}</strong></span>
             <span>•</span>
             <span>Corpus: <strong>37 Architecture &amp; Code Specs</strong></span>
           </div>
@@ -97,13 +99,15 @@ export const MossObservabilityView: React.FC<MossObservabilityViewProps> = ({
         <div style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', borderRadius: 8, padding: '14px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <Cpu style={{ width: 16, height: 16, color: 'var(--info-cyan)' }} />
-            <strong style={{ fontSize: 13, color: 'var(--info-cyan)' }}>Moss: Sub-10ms Semantic Retrieval</strong>
+            <strong style={{ fontSize: 13, color: 'var(--info-cyan)' }}>
+              {stats?.currentProvider === 'MossCloud' ? 'Moss Cloud retrieval' : 'Local Retrieval Fallback'}
+            </strong>
             <span className="status-chip" style={{ fontSize: 10, marginLeft: 'auto', color: 'var(--healthy-green)' }}>
-              {stats?.currentProvider === 'MossCloud' ? 'Cloud Moss Engine' : 'Local Fallback Engine'}
+              {stats?.currentProvider === 'MossCloud' ? 'Moss Cloud retrieval' : 'Local Retrieval Fallback'}
             </span>
           </div>
           <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-            Retrieves current operational reality (OpenAPI specs, AST code nodes, runbooks, metrics) with sub-10ms hardware timing. Moss serves as the real-time context retrieval layer during active triage.
+            Retrieves current operational reality (OpenAPI specs, AST code nodes, runbooks, metrics) with hardware stopwatch timing. Moss serves as the real-time context retrieval layer during active triage.
           </p>
         </div>
 
@@ -146,7 +150,7 @@ export const MossObservabilityView: React.FC<MossObservabilityViewProps> = ({
             <span>Side-by-Side Retrieval Latency Comparison</span>
           </div>
           <span style={{ fontSize: 11, color: 'var(--healthy-green)', fontWeight: 700 }}>
-            ⚡ 303x Speedup Over Cloud Vector DB
+            ⚡ Direct Hardware Measurement
           </span>
         </div>
         <div className="sre-panel-body">
@@ -162,7 +166,9 @@ export const MossObservabilityView: React.FC<MossObservabilityViewProps> = ({
             <tbody>
               <tr>
                 <td>
-                  <strong style={{ color: 'var(--info-cyan)' }}>Moss Sub-10ms Retrieval (Actual)</strong>
+                  <strong style={{ color: 'var(--info-cyan)' }}>
+                    {stats?.currentProvider === 'MossCloud' ? 'Moss Cloud retrieval' : 'Local Retrieval Fallback'}
+                  </strong>
                 </td>
                 <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--healthy-green)' }}>
                   {benchmark ? `${benchmark.mossLatencyMs} ms` : '0.74 ms'}

@@ -39,3 +39,11 @@ yarn-error.log*
 *~
 Thumbs.db
 [Dd]esktop.ini
+
+## Python & Moss Runtime
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+src/Rescue.Infrastructure/MossBridge/core/

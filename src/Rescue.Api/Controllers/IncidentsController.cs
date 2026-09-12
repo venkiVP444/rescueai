@@ -32,8 +32,15 @@ public class IncidentsController : ControllerBase
     [HttpPost("{id}/approve")]
     public async Task<IActionResult> Approve(string id, [FromQuery] string approver = "Staff SRE Engineer")
     {
-        var incident = await _orchestrator.ApproveAndDeployAsync(id, approver);
-        return Ok(incident);
+        try
+        {
+            var incident = await _orchestrator.ApproveAndDeployAsync(id, approver);
+            return Ok(incident);
+        }
+        catch (System.InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPost("{id}/reject")]
