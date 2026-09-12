@@ -216,6 +216,8 @@ public class MossRetrievalService : IMossRetrievalService
         var avg = Math.Round(latencies.Average(), 2);
         var last = metrics.Last().LatencyMs;
 
+        var effectiveProvider = metrics.Count > 0 ? metrics.Last().Provider : _configuredProvider;
+
         return new MossObservabilityStats(
             P50Ms: Math.Round(p50, 2),
             P95Ms: Math.Round(p95, 2),
@@ -223,7 +225,7 @@ public class MossRetrievalService : IMossRetrievalService
             AverageMs: avg,
             LastQueryLatencyMs: last,
             TotalQueries: metrics.Count,
-            CurrentProvider: _configuredProvider,
+            CurrentProvider: effectiveProvider,
             RecentQueries: metrics.TakeLast(10).ToList()
         );
     }

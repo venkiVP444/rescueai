@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Cpu, Activity, BarChart2, CheckCircle, Search, Database, Clock } from 'lucide-react';
 import { MossObservabilityStats, MossBenchmarkResult } from '../types';
+import { apiUrl } from '../apiConfig';
 
 interface MossObservabilityViewProps {
   stats?: MossObservabilityStats;
@@ -13,7 +14,7 @@ export const MossObservabilityView: React.FC<MossObservabilityViewProps> = ({
 }) => {
   const [benchmark, setBenchmark] = useState<MossBenchmarkResult | null>(null);
   const [running, setRunning] = useState(false);
-  const [testQuery, setTestQuery] = useState('Acme Payments v4.2 customer_id breaking change');
+  const [testQuery, setTestQuery] = useState('PaymentService AcmePayments schema breaking change');
   const [testResult, setTestResult] = useState<{ docs: string[]; timeMs: number } | null>(null);
   const [testing, setTesting] = useState(false);
 

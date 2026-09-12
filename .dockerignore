@@ -1,0 +1,17 @@
+.git/
+.github/
+.vs/
+.idea/
+.vscode/
+bin/
+obj/
+node_modules/
+tools/
+scripts/
+*.exe
+.env
+.env.*
+!.env.example
+*.md
+docs/
+tests/

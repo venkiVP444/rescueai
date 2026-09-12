@@ -14,6 +14,10 @@ using Rescue.Infrastructure.Retrieval;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Dynamic port binding for Cloud deployment (Render) and local dev
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5105";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // Controllers with string enum conversion
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -67,6 +71,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors();
 
 app.UseSwagger();
@@ -78,6 +85,7 @@ app.UseSwaggerUI(c =>
 
 app.MapControllers();
 app.MapHub<RescueHub>("/hubs/rescue");
+app.MapFallbackToFile("index.html");
 
 // Auto-migrate SQLite schema and seed baseline memories and default project
 using (var scope = app.Services.CreateScope())

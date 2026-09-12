@@ -18,6 +18,7 @@ import {
   Code2
 } from 'lucide-react';
 import { Project } from '../types';
+import { apiUrl, getActiveHost } from '../apiConfig';
 
 interface IntegrationsViewProps {
   projects: Project[];
@@ -32,7 +33,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
   onSelectProject,
   onProjectCreated
 }) => {
-  const apiEndpoint = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5105';
+  const apiEndpoint = getActiveHost();
   const [activeSubTab, setActiveSubTab] = useState<'applications' | 'sdk' | 'events'>('applications');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [newAppName, setNewAppName] = useState('');
@@ -59,7 +60,7 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({
     if (!newAppName.trim()) return;
 
     try {
-      const res = await fetch('/api/projects', {
+      const res = await fetch(apiUrl('/api/projects'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

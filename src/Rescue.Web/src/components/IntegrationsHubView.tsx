@@ -16,9 +16,10 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Project, RescueEvent } from '../types';
+import { apiUrl, getActiveHost } from '../apiConfig';
 
 export const IntegrationsHubView: React.FC = () => {
-  const apiEndpoint = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5105';
+  const apiEndpoint = getActiveHost();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('acme-commerce');
   const [events, setEvents] = useState<RescueEvent[]>([]);
@@ -50,7 +51,7 @@ export const IntegrationsHubView: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch('/api/v1/projects');
+      const res = await fetch(apiUrl('/api/v1/projects'));
       if (res.ok) {
         const data = await res.json();
         setProjects(data.projects || []);
@@ -76,7 +77,7 @@ export const IntegrationsHubView: React.FC = () => {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch(`/api/v1/events?projectId=${selectedProjectId}&limit=20`);
+      const res = await fetch(apiUrl(`/api/v1/events?projectId=${selectedProjectId}&limit=20`));
       if (res.ok) {
         const data = await res.json();
         setEvents(data.events || []);
@@ -92,7 +93,7 @@ export const IntegrationsHubView: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/projects', {
+      const res = await fetch(apiUrl('/api/v1/projects'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -127,7 +128,7 @@ export const IntegrationsHubView: React.FC = () => {
     setSendingTestEvent(true);
     setTestResult(null);
     try {
-      const res = await fetch('/api/v1/events', {
+      const res = await fetch(apiUrl('/api/v1/events'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

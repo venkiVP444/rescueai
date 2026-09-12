@@ -1,38 +1,39 @@
-# RESCUE AI - All-in-One Startup Script
+# RESCUE AI - Local Development Startup Script
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host " Starting RESCUE AI Engine & UI" -ForegroundColor Cyan
+Write-Host " Starting RESCUE AI Local Services" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# 1. Set Moss Cloud Credentials
-$env:MOSS_PROJECT_ID = "38f88b97-8ba3-458f-a740-3cb8c56fe54e"
-$env:MOSS_PROJECT_KEY = "moss_8dedee9223cdffcd95795eec55a799db"
+# 1. Check Moss Cloud Credentials
+if (-not $env:MOSS_PROJECT_ID -or -not $env:MOSS_PROJECT_KEY) {
+    Write-Host "[INFO] MOSS_PROJECT_ID or MOSS_PROJECT_KEY not set in environment." -ForegroundColor DarkYellow
+    Write-Host "       RESCUE will safely run using built-in Local Retrieval Fallback." -ForegroundColor DarkYellow
+} else {
+    Write-Host "[OK] Moss Cloud credentials detected in environment." -ForegroundColor Green
+}
 
-# 2. Start Moss Cloud Bridge in new window
-Write-Host "[1/4] Starting Moss Cloud Bridge (port 5188)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$env:MOSS_PROJECT_ID='$env:MOSS_PROJECT_ID'; `$env:MOSS_PROJECT_KEY='$env:MOSS_PROJECT_KEY'; python src/Rescue.Infrastructure/MossBridge/moss_bridge.py"
-
-Start-Sleep -Seconds 2
+# 2. Start Moss Cloud Bridge in new window (if credentials present)
+if ($env:MOSS_PROJECT_ID -and $env:MOSS_PROJECT_KEY) {
+    Write-Host "[1/3] Starting Moss Cloud Bridge (port 5188)..." -ForegroundColor Yellow
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$env:MOSS_PROJECT_ID='$env:MOSS_PROJECT_ID'; `$env:MOSS_PROJECT_KEY='$env:MOSS_PROJECT_KEY'; python src/Rescue.Infrastructure/MossBridge/moss_bridge.py"
+    Start-Sleep -Seconds 2
+} else {
+    Write-Host "[1/3] Skipping Moss Bridge (running Local Fallback mode)..." -ForegroundColor Gray
+}
 
 # 3. Start Backend API (.NET 10) in new window
-Write-Host "[2/4] Starting ASP.NET Core Backend (port 5105)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$env:MOSS_PROJECT_ID='$env:MOSS_PROJECT_ID'; `$env:MOSS_PROJECT_KEY='$env:MOSS_PROJECT_KEY'; dotnet run --project src/Rescue.Api"
+Write-Host "[2/3] Starting ASP.NET Core Backend (port 5105)..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "dotnet run --project src/Rescue.Api"
 
 Start-Sleep -Seconds 3
 
 # 4. Start React Frontend (Vite) in new window
-Write-Host "[3/4] Starting React 19 Frontend (port 5173)..." -ForegroundColor Yellow
+Write-Host "[3/3] Starting React 19 Frontend (port 5173)..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "npm run dev --prefix src/Rescue.Web"
 
-Start-Sleep -Seconds 3
-
-# 5. Start Cloudflare Public Tunnel in new window
-Write-Host "[4/4] Starting Public Cloudflare Tunnel..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host 'Starting Cloudflare Public Tunnel for port 5173...' -ForegroundColor Cyan; & 'tools\cloudflared.exe' tunnel --url http://localhost:5173"
-
 Write-Host "========================================" -ForegroundColor Green
-Write-Host " All 4 services started in separate windows!" -ForegroundColor Green
+Write-Host " All local services started!" -ForegroundColor Green
 Write-Host " Local Web App:    http://localhost:5173" -ForegroundColor Green
 Write-Host " Swagger API Docs: http://localhost:5173/swagger/index.html" -ForegroundColor Green
 Write-Host " Backend API:      http://localhost:5105" -ForegroundColor Green
-Write-Host " Public Tunnel:    Check the Cloudflare Tunnel terminal window for the live https://...trycloudflare.com link" -ForegroundColor Green
+Write-Host " Health Check:     http://localhost:5105/health" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green

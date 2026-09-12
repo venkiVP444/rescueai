@@ -17,6 +17,7 @@ import {
   MossBenchmarkResult,
   Project
 } from './types';
+import { apiUrl } from './apiConfig';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>('overview');
@@ -34,7 +35,7 @@ export const App: React.FC = () => {
     fetchProjects();
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl('/hubs/rescue')
+      .withUrl(apiUrl('/hubs/rescue'))
       .withAutomaticReconnect()
       .build();
 
@@ -116,7 +117,7 @@ export const App: React.FC = () => {
 
   const fetchDashboard = async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch(apiUrl('/api/dashboard'));
       if (res.ok) {
         const data = await res.json();
         setServices(data.services || []);
@@ -132,7 +133,7 @@ export const App: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch('/api/projects');
+      const res = await fetch(apiUrl('/api/projects'));
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.projects || []);
@@ -148,7 +149,7 @@ export const App: React.FC = () => {
   const handleSetAutonomy = async (mode: AutonomyMode) => {
     setAutonomyMode(mode);
     try {
-      await fetch('/api/dashboard/autonomy', {
+      await fetch(apiUrl('/api/dashboard/autonomy'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mode)
@@ -161,7 +162,7 @@ export const App: React.FC = () => {
   const handlePlayKillerDemo = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/demo/scenario/api-incident', { method: 'POST' });
+      const res = await fetch(apiUrl('/api/demo/scenario/api-incident'), { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setIncident(data.incident);
@@ -176,7 +177,7 @@ export const App: React.FC = () => {
   const handleReset = async () => {
     setLoading(true);
     try {
-      await fetch('/api/demo/reset', { method: 'POST' });
+      await fetch(apiUrl('/api/demo/reset'), { method: 'POST' });
       setIncident(undefined);
       setActiveTab('overview');
       fetchDashboard();
@@ -189,7 +190,7 @@ export const App: React.FC = () => {
     if (!incident) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/incidents/${incident.id}/approve`, { method: 'POST' });
+      const res = await fetch(apiUrl(`/api/incidents/${incident.id}/approve`), { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setIncident(data);
@@ -204,7 +205,7 @@ export const App: React.FC = () => {
     if (!incident) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/incidents/${incident.id}/reject`, {
+      const res = await fetch(apiUrl(`/api/incidents/${incident.id}/reject`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: 'Rejected by SRE for further analysis' })
@@ -220,7 +221,7 @@ export const App: React.FC = () => {
   };
 
   const handleRunBenchmark = async (): Promise<MossBenchmarkResult> => {
-    const res = await fetch('/api/performance/moss/benchmark', { method: 'POST' });
+    const res = await fetch(apiUrl('/api/performance/moss/benchmark'), { method: 'POST' });
     const data = await res.json();
     fetchDashboard();
     return data;

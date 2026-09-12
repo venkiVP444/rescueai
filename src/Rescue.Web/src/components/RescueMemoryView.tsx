@@ -13,6 +13,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { IncidentMemory } from '../types';
+import { apiUrl } from '../apiConfig';
 
 interface DisplayMemoryItem {
   id: string;
@@ -31,7 +32,11 @@ interface DisplayMemoryItem {
   isBaseline: boolean;
 }
 
-export const RescueMemoryView: React.FC = () => {
+interface RescueMemoryProps {
+  isFullPage?: boolean;
+}
+
+export const RescueMemoryView: React.FC<RescueMemoryProps> = ({ isFullPage = false }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedMemory, setSelectedMemory] = useState<DisplayMemoryItem | null>(null);
   const [memories, setMemories] = useState<DisplayMemoryItem[]>([]);
@@ -40,7 +45,7 @@ export const RescueMemoryView: React.FC = () => {
   const fetchMemories = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/memory');
+      const res = await fetch(apiUrl('/api/memory'));
       if (res.ok) {
         const data = await res.json();
         const rawList: IncidentMemory[] = data.memories || [];

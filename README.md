@@ -23,7 +23,8 @@
 8. [Why Human Approval Is Mandatory (Human-in-the-Loop)](#8-why-human-approval-is-mandatory-human-in-the-loop)
 9. [Complete System Architecture](#9-complete-system-architecture)
 10. [Verified Test & Build Results](#10-verified-test--build-results)
-11. [How to Run the Demo Locally](#11-how-to-run-the-demo-locally)
+11. [Public Production Deployment](#11-public-production-deployment)
+12. [How to Run the Demo Locally](#12-how-to-run-the-demo-locally)
 
 ---
 
@@ -266,7 +267,23 @@ dist/assets/index-87LQWnxG.js   354.70 kB │ gzip: 98.78 kB
 
 ---
 
-## 11. How to Run the Demo Locally
+## 11. Public Production Deployment
+
+RESCUE AI is deployed publicly for hackathon evaluation using a decoupled cloud architecture on free infrastructure (without local machine or tunnel dependencies):
+
+| Service | Public Production URL | Description |
+| :--- | :--- | :--- |
+| **Web Application (Render)** | **`https://rescueai-api.onrender.com/`** | Full-stack application (.NET 10 + React 19) |
+| **Static CDN Web App (Vercel)** | **`https://rescueai.vercel.app/`** | Edge-hosted static React 19 client |
+| **Health Probe** | **`https://rescueai-api.onrender.com/health`** | Real-time service & SQLite health check |
+| **Interactive Swagger API** | **`https://rescueai-api.onrender.com/swagger/index.html`** | Live OpenAPI 3.0 explorer |
+| **SignalR Real-Time Hub** | **`wss://rescueai-api.onrender.com/hubs/rescue`** | Live incident telemetry streaming |
+
+> 📖 **Full Deployment Documentation:** See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for container build specifications, CI/CD configuration, and environment setup.
+
+---
+
+## 12. How to Run the Demo Locally
 
 > 📖 **Definitive Presentation Guide:** See **[docs/DEMO_READINESS.md](docs/DEMO_READINESS.md)** for the official 3-minute hackathon demo script, full API endpoint reference, and architectural honesty disclosures.
 

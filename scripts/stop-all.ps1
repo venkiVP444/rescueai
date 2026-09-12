@@ -1,5 +1,5 @@
-# RESCUE AI - Stop All Script
-Write-Host "Stopping all RESCUE AI services and tunnels..." -ForegroundColor Yellow
+# RESCUE AI - Stop All Local Services
+Write-Host "Stopping all RESCUE AI local services..." -ForegroundColor Yellow
 
 $ports = @(5173, 5105, 5188)
 foreach ($port in $ports) {
@@ -15,5 +15,4 @@ foreach ($port in $ports) {
     }
 }
 
-Get-Process -Name "cloudflared" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-Write-Host "All RESCUE services and tunnels are stopped. Ports are free!" -ForegroundColor Green
+Write-Host "All RESCUE local services stopped. Ports 5173, 5105, 5188 are free!" -ForegroundColor Green
