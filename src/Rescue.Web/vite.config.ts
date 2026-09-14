@@ -16,8 +16,9 @@ export default defineConfig({
         changeOrigin: true
       },
       '/swagger': {
-        target: 'http://localhost:5105',
-        changeOrigin: true
+        target: 'https://rescueai-api-api.onrender.com',
+        changeOrigin: true,
+        secure: false
       },
       '/hubs': {
         target: 'http://localhost:5105',

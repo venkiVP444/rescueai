@@ -33,7 +33,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "npm run dev --pre
 Write-Host "========================================" -ForegroundColor Green
 Write-Host " All local services started!" -ForegroundColor Green
 Write-Host " Local Web App:    http://localhost:5173" -ForegroundColor Green
-Write-Host " Swagger API Docs: http://localhost:5173/swagger/index.html" -ForegroundColor Green
+Write-Host " Swagger API Docs: https://rescueai-api-api.onrender.com/swagger/index.html" -ForegroundColor Green
 Write-Host " Backend API:      http://localhost:5105" -ForegroundColor Green
 Write-Host " Health Check:     http://localhost:5105/health" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green

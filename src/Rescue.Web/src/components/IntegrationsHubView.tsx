@@ -16,7 +16,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Project, RescueEvent } from '../types';
-import { apiUrl, getActiveHost } from '../apiConfig';
+import { apiUrl, getActiveHost, SWAGGER_URL } from '../apiConfig';
 
 export const IntegrationsHubView: React.FC = () => {
   const apiEndpoint = getActiveHost();
@@ -198,7 +198,7 @@ export const IntegrationsHubView: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <a
-            href="/swagger/index.html"
+            href={SWAGGER_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary-action"

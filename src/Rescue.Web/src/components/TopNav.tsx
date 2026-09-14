@@ -1,6 +1,7 @@
 import React from 'react';
 import { Shield, Activity, RefreshCw, Play, Layers, Cpu, FileText, Radio, ExternalLink } from 'lucide-react';
 import { AutonomyMode, MossObservabilityStats } from '../types';
+import { SWAGGER_URL } from '../apiConfig';
 
 interface TopNavProps {
   autonomyMode: AutonomyMode;
@@ -96,7 +97,7 @@ export const TopNav: React.FC<TopNavProps> = ({
 
             {/* Direct Swagger API Link */}
             <a
-              href="/swagger/index.html"
+              href={SWAGGER_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="nav-link-btn swagger-link-btn"

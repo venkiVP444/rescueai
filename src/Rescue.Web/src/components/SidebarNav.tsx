@@ -16,6 +16,7 @@ import {
   Zap
 } from 'lucide-react';
 import { AutonomyMode, Project } from '../types';
+import { SWAGGER_URL } from '../apiConfig';
 
 export type NavTab =
   | 'overview'
@@ -160,7 +161,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         </button>
 
         <a
-          href="/swagger/index.html"
+          href={SWAGGER_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="sidebar-nav-item swagger-nav-link"

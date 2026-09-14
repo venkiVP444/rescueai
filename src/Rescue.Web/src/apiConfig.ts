@@ -1,6 +1,9 @@
 // Centralized API and SignalR host configuration
 export const API_BASE = (((import.meta as any).env?.VITE_API_BASE_URL as string) || '').replace(/\/$/, '');
 
+// Centralized Swagger documentation URL (pointing to Render API for dev & live explore)
+export const SWAGGER_URL = 'https://rescueai-api-api.onrender.com/swagger/index.html';
+
 /**
  * Returns the fully-qualified or relative API URL depending on deployment environment.
  */
